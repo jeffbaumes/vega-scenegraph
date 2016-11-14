@@ -85,18 +85,27 @@ prototype._render = function(scene, items) {
   var triangleBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleGeometry), gl.STATIC_DRAW);
-  var coord = gl.getAttribLocation(gl._shaderProgram, "coordinates");
-  gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(coord);
+  gl.vertexAttribPointer(gl._coordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._coordLocation);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   var triangleColorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleColor), gl.STATIC_DRAW);
-  var color = gl.getAttribLocation(gl._shaderProgram, "color");
-  gl.vertexAttribPointer(color, 4, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(color);
+  gl.vertexAttribPointer(gl._colorLocation, 4, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._colorLocation);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+  var width = gl.canvas.width / gl._ratio;
+  var height = gl.canvas.height / gl._ratio;
+
+  var matrix = [
+    2/width, 0, 0, 0,
+    0, -2/height, 0, 0,
+    0, 0, 1, 0,
+    -1, 1, 0, 1
+  ];
+  gl.uniformMatrix4fv(gl._matrixLocation, false, matrix);
 
   gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
 

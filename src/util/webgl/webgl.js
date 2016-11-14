@@ -23,9 +23,10 @@ export default function(w, h) {
   var vertCode =
     'attribute vec2 coordinates;' +
     'attribute vec4 color;' +
+    'uniform mat4 matrix;' +
     'varying vec4 vColor;' +
     'void main(void) {' +
-       ' gl_Position = vec4(coordinates, 0.0, 1.0);' +
+       ' gl_Position = matrix * vec4(coordinates, 0.0, 1.0);' +
        ' vColor = color;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -54,7 +55,9 @@ export default function(w, h) {
   gl.linkProgram(shaderProgram);
   gl.useProgram(shaderProgram);
   gl._shaderProgram = shaderProgram;
-
+  gl._coordLocation = gl.getAttribLocation(gl._shaderProgram, 'coordinates');
+  gl._colorLocation = gl.getAttribLocation(gl._shaderProgram, 'color');
+  gl._matrixLocation = gl.getUniformLocation(gl._shaderProgram, 'matrix');
 
 // -------------------------------------------------------------------------
 // BEGIN: Adapted from https://github.com/greggman/webgl-fundamentals
@@ -150,10 +153,10 @@ export default function(w, h) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
 
   gl._imageShaderProgram = shaderProgram;
-  gl._imagePositionLocation = gl.getAttribLocation(gl._imageShaderProgram, "a_position");
-  gl._imageTexcoordLocation = gl.getAttribLocation(gl._imageShaderProgram, "a_texcoord");
-  gl._imageMatrixLocation = gl.getUniformLocation(gl._imageShaderProgram, "u_matrix");
-  gl._imageTextureLocation = gl.getUniformLocation(gl._imageShaderProgram, "u_texture");
+  gl._imagePositionLocation = gl.getAttribLocation(gl._imageShaderProgram, 'a_position');
+  gl._imageTexcoordLocation = gl.getAttribLocation(gl._imageShaderProgram, 'a_texcoord');
+  gl._imageMatrixLocation = gl.getUniformLocation(gl._imageShaderProgram, 'u_matrix');
+  gl._imageTextureLocation = gl.getUniformLocation(gl._imageShaderProgram, 'u_texture');
   gl._imagePositionBuffer = positionBuffer;
   gl._imageTexcoordBuffer = texcoordBuffer;
 
