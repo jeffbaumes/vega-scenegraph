@@ -7,6 +7,11 @@ export default function(w, h) {
 
   var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
+  gl._textCanvas = document.createElement('canvas');
+  gl._textCanvas.width = w;
+  gl._textCanvas.height = h;
+  gl._textContext = gl._textCanvas.getContext('2d');
+
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.disable(gl.CULL_FACE);
 

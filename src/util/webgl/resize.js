@@ -12,6 +12,15 @@ export default function(canvas, width, height, origin) {
   canvas.width = width * ratio;
   canvas.height = height * ratio;
 
+  gl._textCanvas.width = width * ratio;
+  gl._textCanvas.height = height * ratio;
+  gl._textContext.pixelRatio = ratio;
+  gl._textContext.setTransform(
+    ratio, 0, 0, ratio,
+    ratio * origin[0],
+    ratio * origin[1]
+  );
+
   if (ratio !== 1) {
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';

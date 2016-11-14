@@ -5,6 +5,7 @@ import fill from '../util/canvas/fill';
 import {pick} from '../util/canvas/pick';
 import stroke from '../util/canvas/stroke';
 import translate from '../util/svg/translate';
+import {loadImageAndCreateTextureInfo} from '../util/webgl/image';
 
 var textAlign = {
   'left':   'start',
@@ -72,42 +73,64 @@ function bound(bounds, item, noRotate) {
   return bounds.expand(noRotate ? 0 : 1);
 }
 
+function drawText(context, item, bounds) {
+  var opacity, x, y, r, t, str;
+  if (bounds && !bounds.intersects(item.bounds)) return false; // bounds check
+  if (!(str = textValue(item.text))) return false; // get text string
+
+  opacity = item.opacity == null ? 1 : item.opacity;
+  if (opacity === 0) return false;
+
+  context.font = font(item);
+  context.textAlign = item.align || 'left';
+
+  x = item.x || 0;
+  y = item.y || 0;
+  if ((r = item.radius)) {
+    t = (item.theta || 0) - Math.PI/2;
+    x += r * Math.cos(t);
+    y += r * Math.sin(t);
+  }
+
+  if (item.angle) {
+    context.save();
+    context.translate(x, y);
+    context.rotate(item.angle * Math.PI/180);
+    x = y = 0; // reset x, y
+  }
+  x += (item.dx || 0);
+  y += (item.dy || 0) + offset(item);
+
+  if (item.fill && fill(context, item, opacity)) {
+    context.fillText(str, x, y);
+  }
+  if (item.stroke && stroke(context, item, opacity)) {
+    context.strokeText(str, x, y);
+  }
+  if (item.angle) context.restore();
+  return true;
+}
+
 function draw(context, scene, bounds) {
   visit(scene, function(item) {
-    var opacity, x, y, r, t, str;
-    if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
-    if (!(str = textValue(item.text))) return; // get text string
+    drawText(context, item, bounds);
+  });
+}
 
-    opacity = item.opacity == null ? 1 : item.opacity;
-    if (opacity === 0) return;
+function drawGL(context, scene, bounds) {
+  visit(scene, function(item) {
+    context._textContext.save();
+    context._textContext.setTransform(1, 0, 0, 1, 0, 0);
+    context._textContext.clearRect(0, 0, context._textCanvas.width, context._textCanvas.height);
+    context._textContext.restore();
 
-    context.font = font(item);
-    context.textAlign = item.align || 'left';
-
-    x = item.x || 0;
-    y = item.y || 0;
-    if ((r = item.radius)) {
-      t = (item.theta || 0) - Math.PI/2;
-      x += r * Math.cos(t);
-      y += r * Math.sin(t);
-    }
-
-    if (item.angle) {
-      context.save();
-      context.translate(x, y);
-      context.rotate(item.angle * Math.PI/180);
-      x = y = 0; // reset x, y
-    }
-    x += (item.dx || 0);
-    y += (item.dy || 0) + offset(item);
-
-    if (item.fill && fill(context, item, opacity)) {
-      context.fillText(str, x, y);
-    }
-    if (item.stroke && stroke(context, item, opacity)) {
-      context.strokeText(str, x, y);
-    }
-    if (item.angle) context.restore();
+    drawText(context._textContext, item, bounds);
+    var imgInfo = loadImageAndCreateTextureInfo(context, context._textCanvas);
+    imgInfo.x = 0;
+    imgInfo.y = 0;
+    imgInfo.w = context.canvas.width;
+    imgInfo.h = context.canvas.height;
+    context._images.push(imgInfo);
   });
 }
 
@@ -135,5 +158,6 @@ export default {
   attr:   attr,
   bound:  bound,
   draw:   draw,
+  drawGL: drawGL,
   pick:   pick(hit)
 };

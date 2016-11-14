@@ -153,6 +153,8 @@ function drawGL(context, scene, bounds) {
     // setup graphics context
     context._tx += gx;
     context._ty += gy;
+    context._textContext.save();
+    context._textContext.translate(gx, gy);
 
     // draw group background
     if (group.stroke || group.fill) {
@@ -180,6 +182,7 @@ function drawGL(context, scene, bounds) {
 
     context._tx -= gx;
     context._ty -= gy;
+    context._textContext.restore();
   });
 }
 

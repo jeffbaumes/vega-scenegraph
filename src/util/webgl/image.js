@@ -32,8 +32,6 @@
 // # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // creates a texture info { width: w, height: h, texture: tex }
-// The texture will start with 1x1 pixels and be updated
-// when the image has loaded
 export function loadImageAndCreateTextureInfo(gl, img) {
   var tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -44,27 +42,11 @@ export function loadImageAndCreateTextureInfo(gl, img) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  var textureInfo = {
-    width: 1,   // we don't know the size until it loads
-    height: 1,
-    texture: tex,
-  };
-  if (!(img instanceof Image)) {
-    var url = img;
-    img = new Image();
-    img.addEventListener('load', function() {
-      textureInfo.width = img.width;
-      textureInfo.height = img.height;
-      gl.bindTexture(gl.TEXTURE_2D, textureInfo.texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-    });
-    img.src = url;
-  } else {
-    textureInfo.width = img.width;
-    textureInfo.height = img.height;
-    gl.bindTexture(gl.TEXTURE_2D, textureInfo.texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-  }
+  var textureInfo = {texture: tex};
+  textureInfo.width = img.width;
+  textureInfo.height = img.height;
+  gl.bindTexture(gl.TEXTURE_2D, textureInfo.texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
   return textureInfo;
 }
 
