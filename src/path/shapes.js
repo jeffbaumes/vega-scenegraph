@@ -4,6 +4,8 @@ import symbols from './symbols';
 import {default as vg_rect} from './rectangle';
 import {default as vg_trail} from './trail';
 
+import geometryForPath from './geometryForPath';
+
 import {
   arc as d3_arc,
   symbol as d3_symbol,
@@ -33,34 +35,53 @@ var arcShape    = d3_arc().cornerRadius(cr).padAngle(pa),
     symbolShape = d3_symbol().type(type).size(size);
 
 export function arc(context, item) {
-  return arcShape.context(context)(item);
+  if (context.arc) {
+    return arcShape.context(context)(item);
+  }
+  return geometryForPath(arcShape.context(null)(item));
 }
 
 export function area(context, items) {
   var item = items[0],
-      interp = item.interpolate || 'linear';
-  return (interp === 'trail' ? trailShape
-    : (item.orient === 'horizontal' ? areahShape : areavShape)
-        .curve(curves(interp, item.orient, item.tension))
-  ).context(context)(items);
+      interp = item.interpolate || 'linear',
+      s = (interp === 'trail' ? trailShape
+        : (item.orient === 'horizontal' ? areahShape : areavShape)
+            .curve(curves(interp, item.orient, item.tension))
+      )
+  if (context.arc) {
+    return s.context(context)(items);
+  }
+  return geometryForPath(s.context(null)(items));
 }
 
 export function shape(context, item) {
-  return (item.mark.shape || item.shape)
-    .context(context)(item);
+  var s = item.mark.shape || item.shape;
+  if (context.arc) {
+    return s.context(context)(item);
+  }
+  return geometryForPath(s.context(null)(item));
 }
 
 export function line(context, items) {
   var item = items[0],
-      interp = item.interpolate || 'linear';
-  return lineShape.curve(curves(interp, item.orient, item.tension))
-    .context(context)(items);
+      interp = item.interpolate || 'linear',
+      s = lineShape.curve(curves(interp, item.orient, item.tension));
+  if (context.arc) {
+    return s.context(context)(items);
+  }
+  return geometryForPath(s.context(null)(items));
 }
 
 export function rectangle(context, item, x, y) {
-  return rectShape.context(context)(item, x, y);
+  if (context.arc) {
+    return rectShape.context(context)(item, x, y);
+  }
+  return geometryForPath(rectShape.context(null)(item, x, y), 0.1);
 }
 
 export function symbol(context, item) {
-  return symbolShape.context(context)(item);
+  if (context.arc) {
+    return symbolShape.context(context)(item);
+  }
+  return geometryForPath(symbolShape.context(null)(item), 0.1);
 }

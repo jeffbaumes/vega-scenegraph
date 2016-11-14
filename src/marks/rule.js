@@ -2,6 +2,7 @@ import boundStroke from '../bound/boundStroke';
 import {visit} from '../util/visit';
 import {pick} from '../util/canvas/pick';
 import stroke from '../util/canvas/stroke';
+import strokeGL from '../util/webgl/stroke';
 import translateItem from '../util/svg/translateItem';
 
 function attr(emit, item) {
@@ -51,6 +52,30 @@ function hit(context, item, x, y) {
   return path(context, item, 1) && context.isPointInStroke(x, y);
 }
 
+function pathGL(context, item, opacity) {
+  var x1, y1, x2, y2, line;
+
+  x1 = item.x || 0;
+  y1 = item.y || 0;
+  x2 = item.x2 != null ? item.x2 : x1;
+  y2 = item.y2 != null ? item.y2 : y1;
+
+  line = [[x1, y1], [x2, y2]];
+
+  if (item.stroke && strokeGL(context, item, opacity, [line], false)) {
+    return true;
+  }
+  return false;
+}
+
+function drawGL(context, scene, bounds) {
+  visit(scene, function(item) {
+    if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
+    var opacity = item.opacity == null ? 1 : item.opacity;
+    pathGL(context, item, opacity);
+  });
+}
+
 export default {
   type:   'rule',
   tag:    'line',
@@ -58,5 +83,6 @@ export default {
   attr:   attr,
   bound:  bound,
   draw:   draw,
-  pick:   pick(hit)
+  pick:   pick(hit),
+  drawGL: drawGL
 };
