@@ -1,6 +1,7 @@
 import {visit} from '../util/visit';
 import {pick} from '../util/canvas/pick';
 import translate from '../util/svg/translate';
+import {loadImageAndCreateTextureInfo} from '../util/webgl/image';
 
 function getImage(item, renderer) {
   var image = item.image;
@@ -74,6 +75,33 @@ function draw(context, scene, bounds) {
   });
 }
 
+function drawGL(context, scene, bounds) {
+  var renderer = this;
+
+  visit(scene, function(item) {
+    if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
+
+    var image = getImage(item, renderer),
+        x = item.x || 0,
+        y = item.y || 0,
+        w = item.width || image.width || 0,
+        h = item.height || image.height || 0,
+        opacity;
+
+    x -= imageXOffset(item.align, w);
+    y -= imageYOffset(item.baseline, h);
+
+    if (image.loaded) {
+      var imgInfo = loadImageAndCreateTextureInfo(context, image);
+      imgInfo.x = x + context._tx + context._origin[0];
+      imgInfo.y = y + context._ty + context._origin[1];
+      imgInfo.w = w;
+      imgInfo.h = h;
+      context._images.push(imgInfo);
+    }
+  });
+}
+
 export default {
   type:   'image',
   tag:    'image',
@@ -81,5 +109,6 @@ export default {
   attr:   attr,
   bound:  bound,
   draw:   draw,
+  drawGL: drawGL,
   pick:   pick()
 };

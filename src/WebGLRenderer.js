@@ -7,6 +7,7 @@ import {clear} from './util/dom';
 import WebGL from './util/webgl/webgl';
 import resize from './util/webgl/resize';
 import color from './util/webgl/color';
+import {drawImage} from './util/webgl/image';
 
 export default function WebGLRenderer(imageLoader) {
   Renderer.call(this, imageLoader);
@@ -69,6 +70,7 @@ prototype._render = function(scene, items) {
   gl._ty = 0;
   gl._triangleGeometry = [];
   gl._triangleColor = [];
+  gl._images = [];
 
   b = (!items || this._redraw)
     ? (this._redraw = false, null)
@@ -77,6 +79,8 @@ prototype._render = function(scene, items) {
   this.clear();
 
   this.draw(gl, scene, b);
+
+  gl.useProgram(gl._shaderProgram);
 
   var triangleBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
@@ -95,6 +99,10 @@ prototype._render = function(scene, items) {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
+
+  gl._images.forEach(function(texInfo) {
+    drawImage(gl, texInfo);
+  });
 
   return this;
 };
