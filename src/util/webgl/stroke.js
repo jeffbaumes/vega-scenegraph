@@ -18,8 +18,7 @@ export default function(context, item, opacity, polylines, closed) {
       cap: (lc = item.strokeCap) != null ? lc : 'butt',
       join: 'miter',
       miterLimit: 10,
-      closed: false
-      // closed: closed
+      closed: closed
   });
 
   var c = color(context, item, item.stroke);

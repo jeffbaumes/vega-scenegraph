@@ -7,9 +7,7 @@ import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import translateItem from '../util/svg/translateItem';
 import {visit} from '../util/visit';
-import fillGL from '../util/webgl/fill';
-import strokeGL from '../util/webgl/stroke';
-import pixelsToDisplay from '../util/webgl/pixelsToDisplay';
+import {drawGeometry} from '../util/webgl/draw';
 
 function attr(emit, item) {
   emit('transform', translateItem(item));
@@ -43,18 +41,7 @@ function drawGL(context, scene, bounds) {
     context._tx += x;
     context._ty += y;
 
-    if (item.fill && fillGL(context, item, opacity, geom.triangles.cells.length)) {
-      geom.triangles.cells.forEach(function (cell) {
-        var p1 = pixelsToDisplay(context, geom.triangles.positions[cell[0]]);
-        var p2 = pixelsToDisplay(context, geom.triangles.positions[cell[1]]);
-        var p3 = pixelsToDisplay(context, geom.triangles.positions[cell[2]]);
-        context._triangleGeometry.push(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
-      });
-    }
-
-    if (item.stroke) {
-      strokeGL(context, item, opacity, geom.lines, geom.closed);
-    }
+    drawGeometry(geom, context, item);
 
     context._tx -= x;
     context._ty -= y;

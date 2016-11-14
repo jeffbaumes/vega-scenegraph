@@ -2,9 +2,7 @@ import boundStroke from '../bound/boundStroke';
 import context from '../bound/boundContext';
 import {drawOne} from '../util/canvas/draw';
 import {hitPath} from '../util/canvas/pick';
-import fillGL from '../util/webgl/fill';
-import strokeGL from '../util/webgl/stroke';
-import pixelsToDisplay from '../util/webgl/pixelsToDisplay';
+import {drawGeometry} from '../util/webgl/draw';
 
 export default function(type, shape) {
 
@@ -43,23 +41,9 @@ export default function(type, shape) {
 
   function drawGL(context, scene, bounds) {
     if (scene.items.length && (!bounds || bounds.intersects(scene.bounds))) {
-      var item = scene.items[0],
-          opacity = item.opacity == null ? 1 : item.opacity;
-
+      var item = scene.items[0];
       var geom = shape(context, scene.items);
-
-      if (item.fill && fillGL(context, item, opacity, geom.triangles.cells.length)) {
-        geom.triangles.cells.forEach(function (cell) {
-          var p1 = pixelsToDisplay(context, geom.triangles.positions[cell[0]]);
-          var p2 = pixelsToDisplay(context, geom.triangles.positions[cell[1]]);
-          var p3 = pixelsToDisplay(context, geom.triangles.positions[cell[2]]);
-          context._triangleGeometry.push(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
-        });
-      }
-
-      if (item.stroke) {
-        strokeGL(context, item, opacity, geom.lines, geom.closed);
-      }
+      drawGeometry(geom, context, item);
     }
   }
 

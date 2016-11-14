@@ -4,9 +4,7 @@ import {visit, pickVisit} from '../util/visit';
 import stroke from '../util/canvas/stroke';
 import fill from '../util/canvas/fill';
 import translateItem from '../util/svg/translateItem';
-import fillGL from '../util/webgl/fill';
-import strokeGL from '../util/webgl/stroke';
-import pixelsToDisplay from '../util/webgl/pixelsToDisplay';
+import {drawGeometry} from '../util/webgl/draw';
 
 function attr(emit, item, renderer) {
   var id = null, defs, c;
@@ -160,22 +158,9 @@ function drawGL(context, scene, bounds) {
     if (group.stroke || group.fill) {
       opacity = group.opacity == null ? 1 : group.opacity;
       if (opacity > 0) {
-
         offset = group.stroke ? 0.5 : 0;
         var geom = rectangle(context, group, offset, offset);
-
-        if (group.fill && fillGL(context, group, opacity, geom.triangles.cells.length)) {
-          geom.triangles.cells.forEach(function (cell) {
-            var p1 = pixelsToDisplay(context, geom.triangles.positions[cell[0]]);
-            var p2 = pixelsToDisplay(context, geom.triangles.positions[cell[1]]);
-            var p3 = pixelsToDisplay(context, geom.triangles.positions[cell[2]]);
-            context._triangleGeometry.push(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
-          });
-        }
-
-        if (group.stroke) {
-          strokeGL(context, group, opacity, geom.lines, true);
-        }
+        drawGeometry(geom, context, group);
       }
     }
 
