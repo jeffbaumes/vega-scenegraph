@@ -5,7 +5,6 @@ import fill from '../util/canvas/fill';
 import {pick} from '../util/canvas/pick';
 import stroke from '../util/canvas/stroke';
 import translate from '../util/svg/translate';
-import {loadImageAndCreateTextureInfo} from '../util/webgl/image';
 
 var textAlign = {
   'left':   'start',
@@ -119,18 +118,7 @@ function draw(context, scene, bounds) {
 
 function drawGL(context, scene, bounds) {
   visit(scene, function(item) {
-    context._textContext.save();
-    context._textContext.setTransform(1, 0, 0, 1, 0, 0);
-    context._textContext.clearRect(0, 0, context._textCanvas.width, context._textCanvas.height);
-    context._textContext.restore();
-
     drawText(context._textContext, item, bounds);
-    var imgInfo = loadImageAndCreateTextureInfo(context, context._textCanvas);
-    imgInfo.x = 0;
-    imgInfo.y = 0;
-    imgInfo.w = context.canvas.width / context._ratio;
-    imgInfo.h = context.canvas.height / context._ratio;
-    context._images.push(imgInfo);
   });
 }
 

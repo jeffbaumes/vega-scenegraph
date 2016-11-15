@@ -8,6 +8,7 @@ import WebGL from './util/webgl/webgl';
 import resize from './util/webgl/resize';
 import color from './util/webgl/color';
 import {drawImage} from './util/webgl/image';
+import {loadImageAndCreateTextureInfo} from './util/webgl/image';
 
 export default function WebGLRenderer(imageLoader) {
   Renderer.call(this, imageLoader);
@@ -109,6 +110,13 @@ prototype._render = function(scene, items) {
 
   gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
 
+  var imgInfo = loadImageAndCreateTextureInfo(gl, gl._textCanvas);
+  imgInfo.x = 0;
+  imgInfo.y = 0;
+  imgInfo.w = gl.canvas.width / gl._ratio;
+  imgInfo.h = gl.canvas.height / gl._ratio;
+  gl._images.push(imgInfo);
+
   gl._images.forEach(function(texInfo) {
     drawImage(gl, texInfo);
   });
@@ -132,4 +140,9 @@ prototype.clear = function(x, y, w, h) {
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
   }
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl._textContext.save();
+  gl._textContext.setTransform(1, 0, 0, 1, 0, 0);
+  gl._textContext.clearRect(0, 0, gl._textCanvas.width, gl._textCanvas.height);
+  gl._textContext.restore();
 };
