@@ -128,8 +128,8 @@ function drawGL(context, scene, bounds) {
     var imgInfo = loadImageAndCreateTextureInfo(context, context._textCanvas);
     imgInfo.x = 0;
     imgInfo.y = 0;
-    imgInfo.w = context.canvas.width;
-    imgInfo.h = context.canvas.height;
+    imgInfo.w = context.canvas.width / context._ratio;
+    imgInfo.h = context.canvas.height / context._ratio;
     context._images.push(imgInfo);
   });
 }
