@@ -26,7 +26,7 @@ export default function(w, h) {
     'uniform mat4 matrix;' +
     'varying vec4 vColor;' +
     'void main(void) {' +
-       ' gl_Position = matrix * vec4(coordinates, 0.0, 1.0);' +
+       ' gl_Position = matrix * vec4(coordinates, -1.0, 1.0);' +
        ' vColor = color;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -64,34 +64,34 @@ export default function(w, h) {
 //
 // BSD license follows:
 //
-// # Copyright 2012, Gregg Tavares.
-// # All rights reserved.
-// #
-// # Redistribution and use in source and binary forms, with or without
-// # modification, are permitted provided that the following conditions are
-// # met:
-// #
-// #     * Redistributions of source code must retain the above copyright
-// # notice, this list of conditions and the following disclaimer.
-// #     * Redistributions in binary form must reproduce the above
-// # copyright notice, this list of conditions and the following disclaimer
-// # in the documentation and/or other materials provided with the
-// # distribution.
-// #     * Neither the name of Gregg Tavares. nor the names of his
-// # contributors may be used to endorse or promote products derived from
-// # this software without specific prior written permission.
-// #
-// # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// # A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// # OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// # SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// # LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// # DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright 2012, Gregg Tavares.
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Gregg Tavares. nor the names of his
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   var vertCode =
     'attribute vec2 a_position;' +
@@ -99,7 +99,7 @@ export default function(w, h) {
     'uniform mat4 u_matrix;' +
     'varying vec2 v_texcoord;' +
     'void main() {' +
-    '  gl_Position = u_matrix * vec4(a_position, 0.0, 1.0);' +
+    '  gl_Position = u_matrix * vec4(a_position, -1.0, 1.0);' +
     '  v_texcoord = a_texcoord;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);

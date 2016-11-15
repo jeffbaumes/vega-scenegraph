@@ -9,10 +9,17 @@ import resize from './util/webgl/resize';
 import color from './util/webgl/color';
 import {drawImage} from './util/webgl/image';
 import {loadImageAndCreateTextureInfo} from './util/webgl/image';
+import {perspective, rotateX, rotateY, rotateZ, multiply, translate as translateGL} from './util/webgl/matrix';
 
 export default function WebGLRenderer(imageLoader) {
   Renderer.call(this, imageLoader);
   this._redraw = false;
+  this._angleX = 0;
+  this._angleY = 0;
+  this._angleZ = 0;
+  this._translateX = 0;
+  this._translateY = 0;
+  this._translateZ = 0;
 }
 
 var prototype = inherits(WebGLRenderer, Renderer),
@@ -46,6 +53,20 @@ prototype.context = function() {
     : null;
 };
 
+prototype.rotate = function(x, y, z) {
+  this._angleX = x;
+  this._angleY = y;
+  this._angleZ = z;
+  return this;
+};
+
+prototype.translate = function(x, y, z) {
+  this._translateX = x;
+  this._translateY = y;
+  this._translateZ = z;
+  return this;
+};
+
 function clipToBounds(g, items) {
   // TODO: do something here?
 }
@@ -66,7 +87,6 @@ prototype._render = function(scene, items) {
       h = this._height,
       b;
 
-  // TODO: Should we save the gl state?
   gl._tx = 0;
   gl._ty = 0;
   gl._triangleGeometry = [];
@@ -77,38 +97,7 @@ prototype._render = function(scene, items) {
     ? (this._redraw = false, null)
     : clipToBounds(gl, items);
 
-  this.clear();
-
   this.draw(gl, scene, b);
-
-  gl.useProgram(gl._shaderProgram);
-
-  var triangleBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleGeometry), gl.STATIC_DRAW);
-  gl.vertexAttribPointer(gl._coordLocation, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(gl._coordLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  var triangleColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, triangleColorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleColor), gl.STATIC_DRAW);
-  gl.vertexAttribPointer(gl._colorLocation, 4, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(gl._colorLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  var width = gl.canvas.width / gl._ratio;
-  var height = gl.canvas.height / gl._ratio;
-
-  var matrix = [
-    2/width, 0, 0, 0,
-    0, -2/height, 0, 0,
-    0, 0, 1, 0,
-    -1, 1, 0, 1
-  ];
-  gl.uniformMatrix4fv(gl._matrixLocation, false, matrix);
-
-  gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
 
   var imgInfo = loadImageAndCreateTextureInfo(gl, gl._textCanvas);
   imgInfo.x = 0;
@@ -117,8 +106,64 @@ prototype._render = function(scene, items) {
   imgInfo.h = gl.canvas.height / gl._ratio;
   gl._images.push(imgInfo);
 
+  this._triangleBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleGeometry), gl.STATIC_DRAW);
+
+  this._triangleColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleColor), gl.STATIC_DRAW);
+
+  this.frame();
+
+  return this;
+};
+
+prototype.frame = function() {
+  var gl = this.context();
+
+  this.clear();
+
+  gl.useProgram(gl._shaderProgram);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleBuffer);
+  gl.vertexAttribPointer(gl._coordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._coordLocation);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
+  gl.vertexAttribPointer(gl._colorLocation, 4, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._colorLocation);
+
+  var width = gl.canvas.width / gl._ratio;
+  var height = gl.canvas.height / gl._ratio;
+
+  var smooshMatrix = [
+    2/width, 0, 0, 0,
+    0, -2/width, 0, 0,
+    0, 0, 1, 0,
+    -1, height/width, 0, 1
+  ];
+
+  var matrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  ];
+
+  matrix = multiply(matrix, perspective(Math.PI/2, width/height, 0.1, 3000));
+  matrix = multiply(matrix, translateGL(this._translateX, this._translateY, (this._translateZ - 1)*height/width));
+  matrix = multiply(matrix, rotateZ(this._angleZ));
+  matrix = multiply(matrix, rotateY(this._angleY));
+  matrix = multiply(matrix, rotateX(this._angleX));
+  matrix = multiply(matrix, translateGL(0, 0, 1));
+  matrix = multiply(matrix, smooshMatrix);
+
+  gl.uniformMatrix4fv(gl._matrixLocation, false, matrix);
+  gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
+
   gl._images.forEach(function(texInfo) {
-    drawImage(gl, texInfo);
+    drawImage(gl, texInfo, matrix);
   });
 
   return this;
