@@ -62,7 +62,7 @@ function pathGL(context, item, opacity) {
 
   line = [[x1, y1], [x2, y2]];
 
-  if (item.stroke && strokeGL(context, item, opacity, [line], false)) {
+  if (item.stroke && strokeGL(context, item, opacity, [line], false, 0)) {
     return true;
   }
   return false;

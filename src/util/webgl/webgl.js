@@ -21,12 +21,13 @@ export default function(w, h) {
   gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
   var vertCode =
-    'attribute vec2 coordinates;' +
+    'attribute vec3 coordinates;' +
     'attribute vec4 color;' +
     'uniform mat4 matrix;' +
+    'uniform float zFactor;' +
     'varying vec4 vColor;' +
     'void main(void) {' +
-       ' gl_Position = matrix * vec4(coordinates, -1.0, 1.0);' +
+       ' gl_Position = matrix * vec4(coordinates.x, coordinates.y, coordinates.z*zFactor - 1.0, 1.0);' +
        ' vColor = color;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -58,6 +59,7 @@ export default function(w, h) {
   gl._coordLocation = gl.getAttribLocation(gl._shaderProgram, 'coordinates');
   gl._colorLocation = gl.getAttribLocation(gl._shaderProgram, 'color');
   gl._matrixLocation = gl.getUniformLocation(gl._shaderProgram, 'matrix');
+  gl._zFactorLocation = gl.getUniformLocation(gl._shaderProgram, 'zFactor');
 
 // -------------------------------------------------------------------------
 // BEGIN: Adapted from https://github.com/greggman/webgl-fundamentals

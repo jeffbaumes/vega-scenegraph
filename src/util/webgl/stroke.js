@@ -4,7 +4,7 @@ import extrude from 'extrude-polyline';
 
 // TODO: Support line dash and line dash offset
 
-export default function(context, item, opacity, polylines, closed) {
+export default function(context, item, opacity, polylines, closed, z) {
 
   // TODO: Don't have special case for 'transparent'
   opacity *= (item.strokeOpacity==null ? 1 : item.strokeOpacity);
@@ -31,10 +31,9 @@ export default function(context, item, opacity, polylines, closed) {
       var p1 = pixelsToDisplay(context, mesh.positions[cell[0]]);
       var p2 = pixelsToDisplay(context, mesh.positions[cell[1]]);
       var p3 = pixelsToDisplay(context, mesh.positions[cell[2]]);
-      context._triangleGeometry.push(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]);
+      context._triangleGeometry.push(p1[0], p1[1], z, p2[0], p2[1], z, p3[0], p3[1], z);
       for (var i = 0; i < 3; i++) {
         context._triangleColor.push(c[0], c[1], c[2], opacity);
-        // context._triangleColor.push(Math.random(), Math.random(), Math.random(), 0.25);
       }
     });
   });

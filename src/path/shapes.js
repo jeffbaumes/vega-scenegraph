@@ -38,7 +38,7 @@ export function arc(context, item) {
   if (context.arc) {
     return arcShape.context(context)(item);
   }
-  return geometryForPath(arcShape.context(null)(item));
+  return geometryForPath(arcShape.context(null)(item), 0.1);
 }
 
 export function area(context, items) {
@@ -51,7 +51,7 @@ export function area(context, items) {
   if (context.arc) {
     return s.context(context)(items);
   }
-  return geometryForPath(s.context(null)(items));
+  return geometryForPath(s.context(null)(items), 0.1);
 }
 
 export function shape(context, item) {

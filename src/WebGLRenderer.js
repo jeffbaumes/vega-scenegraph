@@ -20,6 +20,9 @@ export default function WebGLRenderer(imageLoader) {
   this._translateX = 0;
   this._translateY = 0;
   this._translateZ = 0;
+  this._zFactor = 0;
+  this._depthTest = false;
+  this._randomZ = false;
 }
 
 var prototype = inherits(WebGLRenderer, Renderer),
@@ -67,6 +70,21 @@ prototype.translate = function(x, y, z) {
   return this;
 };
 
+prototype.zFactor = function(z) {
+  this._zFactor = z;
+  return this;
+};
+
+prototype.depthTest = function(val) {
+  this._depthTest = val;
+  return this;
+};
+
+prototype.randomZ = function(val) {
+  this._randomZ = val;
+  return this;
+};
+
 function clipToBounds(g, items) {
   // TODO: do something here?
 }
@@ -92,6 +110,7 @@ prototype._render = function(scene, items) {
   gl._triangleGeometry = [];
   gl._triangleColor = [];
   gl._images = [];
+  gl._randomZ = this._randomZ;
 
   b = (!items || this._redraw)
     ? (this._redraw = false, null)
@@ -127,7 +146,7 @@ prototype.frame = function() {
   gl.useProgram(gl._shaderProgram);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleBuffer);
-  gl.vertexAttribPointer(gl._coordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(gl._coordLocation, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(gl._coordLocation);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
@@ -151,6 +170,12 @@ prototype.frame = function() {
     0, 0, 0, 1
   ];
 
+  if (this._depthTest) {
+    gl.enable(gl.DEPTH_TEST);
+  } else {
+    gl.disable(gl.DEPTH_TEST);
+  }
+
   matrix = multiply(matrix, perspective(Math.PI/2, width/height, 0.1, 3000));
   matrix = multiply(matrix, translateGL(this._translateX, this._translateY, (this._translateZ - 1)*height/width));
   matrix = multiply(matrix, rotateZ(this._angleZ));
@@ -159,8 +184,9 @@ prototype.frame = function() {
   matrix = multiply(matrix, translateGL(0, 0, 1));
   matrix = multiply(matrix, smooshMatrix);
 
+  gl.uniform1f(gl._zFactorLocation, this._zFactor);
   gl.uniformMatrix4fv(gl._matrixLocation, false, matrix);
-  gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 2);
+  gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 3);
 
   gl._images.forEach(function(texInfo) {
     drawImage(gl, texInfo, matrix);
