@@ -38,7 +38,7 @@ prototype.canvas = function() {
 
 // retrieve the current canvas context
 prototype.context = function() {
-  return this._canvas.getContext('2d');
+  return this._canvas.getContext('2d') || this._canvas._textCanvas.getContext('2d');
 };
 
 // supported events

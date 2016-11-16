@@ -11,6 +11,7 @@ export default function(w, h) {
   gl._textCanvas.width = w;
   gl._textCanvas.height = h;
   gl._textContext = gl._textCanvas.getContext('2d');
+  canvas._textCanvas = gl._textCanvas;
 
   gl.clearColor(1.0, 1.0, 1.0, 1.0);
   gl.disable(gl.CULL_FACE);
