@@ -31,7 +31,6 @@ export default function(type, shape) {
   function drawGL(context, scene, bounds) {
     visit(scene, function(item) {
       if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
-      var geom = shape(context, item);
 
       var x = item.x || 0,
           y = item.y || 0;
@@ -39,6 +38,7 @@ export default function(type, shape) {
       context._tx += x;
       context._ty += y;
 
+      var geom = shape(context, item);
       drawGeometry(geom, context, item);
 
       context._tx -= x;

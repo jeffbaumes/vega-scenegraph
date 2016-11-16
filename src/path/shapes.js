@@ -38,7 +38,7 @@ export function arc(context, item) {
   if (context.arc) {
     return arcShape.context(context)(item);
   }
-  return geometryForPath(arcShape.context(null)(item), 0.1);
+  return geometryForPath(context, arcShape.context(null)(item), 0.1);
 }
 
 export function area(context, items) {
@@ -51,15 +51,22 @@ export function area(context, items) {
   if (context.arc) {
     return s.context(context)(items);
   }
-  return geometryForPath(s.context(null)(items), 0.1);
+  return geometryForPath(context, s.context(null)(items), 0.1);
 }
+
+var cache = {};
 
 export function shape(context, item) {
   var s = item.mark.shape || item.shape;
   if (context.arc) {
     return s.context(context)(item);
   }
-  return geometryForPath(s.context(null)(item));
+  var key = item._id;
+  if (cache[key]) {
+    return cache[key];
+  }
+  cache[key] = geometryForPath(context, s.context(null)(item), 1);
+  return cache[key];
 }
 
 export function line(context, items) {
@@ -69,19 +76,19 @@ export function line(context, items) {
   if (context.arc) {
     return s.context(context)(items);
   }
-  return geometryForPath(s.context(null)(items));
+  return geometryForPath(context, s.context(null)(items));
 }
 
 export function rectangle(context, item, x, y) {
   if (context.arc) {
     return rectShape.context(context)(item, x, y);
   }
-  return geometryForPath(rectShape.context(null)(item, x, y), 0.1);
+  return geometryForPath(context, rectShape.context(null)(item, x, y), 0.1);
 }
 
 export function symbol(context, item) {
   if (context.arc) {
     return symbolShape.context(context)(item);
   }
-  return geometryForPath(symbolShape.context(null)(item), 0.1);
+  return geometryForPath(context, symbolShape.context(null)(item), 0.1);
 }

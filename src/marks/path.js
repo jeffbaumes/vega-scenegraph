@@ -33,7 +33,7 @@ function drawGL(context, scene, bounds) {
     var path = item.path;
     if (path == null) return true;
 
-    var geom = geometryForPath(path);
+    var geom = geometryForPath(context, path);
 
     var x = item.x || 0,
         y = item.y || 0;
