@@ -11,7 +11,6 @@ export {default as Renderer} from './src/Renderer';
 export {default as CanvasHandler} from './src/CanvasHandler';
 export {default as CanvasRenderer} from './src/CanvasRenderer';
 
-export {default as WebGLHandler} from './src/WebGLHandler';
 export {default as WebGLRenderer} from './src/WebGLRenderer';
 
 export {default as SVGHandler} from './src/SVGHandler';
