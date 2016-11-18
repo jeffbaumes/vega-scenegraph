@@ -4,6 +4,7 @@ import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import {visit} from '../util/visit';
 import {drawGeometry} from '../util/webgl/draw';
+import geometryForItem from '../path/geometryForItem';
 
 function attr(emit, item) {
   emit('d', rectangle(null, item));
@@ -24,17 +25,15 @@ function draw(context, item) {
   rectangle(context, item);
 }
 
-function pathGL(context, item, opacity) {
-  var geom = rectangle(context, item);
-  drawGeometry(geom, context, item);
-  return true;
-}
-
 function drawGL(context, scene, bounds) {
   visit(scene, function(item) {
     if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
-    var opacity = item.opacity == null ? 1 : item.opacity;
-    pathGL(context, item, opacity);
+
+    if (context._fullRedraw || item._dirty || !item._geom) {
+      var shapeGeom = rectangle(context, item);
+      item._geom = geometryForItem(context, item, shapeGeom);
+    }
+    drawGeometry(item._geom, context, item);
   });
 }
 

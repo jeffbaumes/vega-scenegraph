@@ -5,6 +5,8 @@ import {default as vg_rect} from './rectangle';
 import {default as vg_trail} from './trail';
 
 import geometryForPath from './geometryForPath';
+import geometryForItem from './geometryForItem';
+import {drawGeometry} from '../util/webgl/draw';
 
 import {
   arc as d3_arc,
@@ -54,19 +56,12 @@ export function area(context, items) {
   return geometryForPath(context, s.context(null)(items), 0.1);
 }
 
-var cache = {};
-
 export function shape(context, item) {
   var s = item.mark.shape || item.shape;
   if (context.arc) {
     return s.context(context)(item);
   }
-  var key = item._id;
-  if (cache[key]) {
-    return cache[key];
-  }
-  cache[key] = geometryForPath(context, s.context(null)(item), 1);
-  return cache[key];
+  return geometryForPath(context, s.context(null)(item), 1);
 }
 
 export function line(context, items) {

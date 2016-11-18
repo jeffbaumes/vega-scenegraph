@@ -103,7 +103,7 @@ prototype._render = function(scene, items) {
       o = this._origin,
       w = this._width,
       h = this._height,
-      b;
+      b, i;
 
   gl._tx = 0;
   gl._ty = 0;
@@ -115,6 +115,15 @@ prototype._render = function(scene, items) {
   b = (!items || this._redraw)
     ? (this._redraw = false, null)
     : clipToBounds(gl, items);
+
+  if (items) {
+    for (i = 0; i < items.length; i++) {
+      items[i]._dirty = true;
+    }
+  } else {
+    gl._fullRedraw = true;
+  }
+  // console.log((items ? items.length : 'null') + ' dirty items.');
 
   this.draw(gl, scene, b);
 
@@ -133,7 +142,16 @@ prototype._render = function(scene, items) {
   gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleColor), gl.STATIC_DRAW);
 
+  // console.log(gl._triangleGeometry.length/3 + ' triangles.');
+
   this.frame();
+
+  if (items) {
+    for (i = 0; i < items.length; i++) {
+      items[i]._dirty = false;
+    }
+  }
+  gl._fullRedraw = false;
 
   return this;
 };

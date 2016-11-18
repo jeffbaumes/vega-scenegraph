@@ -36,19 +36,20 @@ function drawPath(path, context, item, items) {
 }
 
 export function drawGeometry(geom, context, item) {
-  var opacity = item.opacity == null ? 1 : item.opacity,
-      tg = context._triangleGeometry;
+  var opacity = item.opacity == null ? 1 : item.opacity, i,
+      tg = context._triangleGeometry,
+      tc = context._triangleColor,
+      tl = geom.triangles.length,
+      t = geom.triangles,
+      cl = geom.colors.length,
+      c = geom.colors;
 
   if (opacity <= 0) return;
-  if (item.fill && fill(context, item, opacity, geom.triangles.length / 9)) {
-    var tl = geom.triangles.length,
-        t = geom.triangles;
-    for (var i = 0; i < tl; i++) {
-      tg.push(t[i]);
-    }
-  }
 
-  if (item.stroke) {
-    stroke(context, item, opacity, geom.lines, geom.closed, geom.z);
+  for (i = 0; i < tl; i++) {
+    tg.push(t[i]);
+  }
+  for (i = 0; i < cl; i++) {
+    tc.push(c[i]);
   }
 }

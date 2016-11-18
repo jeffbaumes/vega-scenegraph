@@ -4,6 +4,7 @@ import {visit, pickVisit} from '../util/visit';
 import stroke from '../util/canvas/stroke';
 import fill from '../util/canvas/fill';
 import translateItem from '../util/svg/translateItem';
+import geometryForItem from '../path/geometryForItem';
 import {drawGeometry} from '../util/webgl/draw';
 
 function attr(emit, item, renderer) {
@@ -157,14 +158,12 @@ function drawGL(context, scene, bounds) {
     context._textContext.translate(gx, gy);
 
     // draw group background
-    if (group.stroke || group.fill) {
-      opacity = group.opacity == null ? 1 : group.opacity;
-      if (opacity > 0) {
-        offset = group.stroke ? 0.5 : 0;
-        var geom = rectangle(context, group, offset, offset);
-        drawGeometry(geom, context, group);
-      }
+    if (context._fullRedraw || group._dirty || !group._geom) {
+      offset = group.stroke ? 0.5 : 0;
+      var shapeGeom = rectangle(context, group, offset, offset);
+      group._geom = geometryForItem(context, group, shapeGeom);
     }
+    drawGeometry(group._geom, context, group);
 
     // set clip and bounds
     if (group.clip) {

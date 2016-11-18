@@ -3,6 +3,7 @@ import context from '../bound/boundContext';
 import {drawOne} from '../util/canvas/draw';
 import {hitPath} from '../util/canvas/pick';
 import {drawGeometry} from '../util/webgl/draw';
+import geometryForItem from '../path/geometryForItem';
 
 export default function(type, shape) {
 
@@ -43,7 +44,18 @@ export default function(type, shape) {
     if (scene.items.length && (!bounds || bounds.intersects(scene.bounds))) {
       var item = scene.items[0];
       var geom = shape(context, scene.items);
-      drawGeometry(geom, context, item);
+      var dirty = false;
+      for (var i = 0; i < scene.items.length; i++) {
+        if (scene.items[i]._dirty) {
+          dirty = true;
+          break;
+        }
+      }
+      if (context._fullRedraw || dirty || !item._geom) {
+        var shapeGeom = shape(context, scene.items);
+        item._geom = geometryForItem(context, item, shapeGeom);
+      }
+      drawGeometry(item._geom, context, item);
     }
   }
 

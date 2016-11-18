@@ -5,6 +5,7 @@ import {pickPath} from '../util/canvas/pick';
 import translateItem from '../util/svg/translateItem';
 import {visit} from '../util/visit';
 import {drawGeometry} from '../util/webgl/draw';
+import geometryForItem from '../path/geometryForItem';
 
 export default function(type, shape) {
 
@@ -38,8 +39,11 @@ export default function(type, shape) {
       context._tx += x;
       context._ty += y;
 
-      var geom = shape(context, item);
-      drawGeometry(geom, context, item);
+      if (context._fullRedraw || item._dirty || !item._geom) {
+        var shapeGeom = shape(context, item);
+        item._geom = geometryForItem(context, item, shapeGeom);
+      }
+      drawGeometry(item._geom, context, item);
 
       context._tx -= x;
       context._ty -= y;
