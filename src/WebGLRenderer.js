@@ -98,6 +98,39 @@ function translate(bounds, group) {
   return b;
 }
 
+prototype._updateUniforms = function() {
+  var gl = this.context();
+  gl.useProgram(gl._shaderProgram);
+
+  var width = gl.canvas.width / gl._ratio;
+  var height = gl.canvas.height / gl._ratio;
+
+  var smooshMatrix = [
+    2/width, 0, 0, 0,
+    0, -2/width, 0, 0,
+    0, 0, 1, 0,
+    -1, height/width, 0, 1
+  ];
+
+  this.matrix = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  ];
+
+  this.matrix = multiply(this.matrix, perspective(Math.PI/2, width/height, 0.1, 3000));
+  this.matrix = multiply(this.matrix, translateGL(this._translateX, this._translateY, (this._translateZ - 1)*height/width));
+  this.matrix = multiply(this.matrix, rotateZ(this._angleZ));
+  this.matrix = multiply(this.matrix, rotateY(this._angleY));
+  this.matrix = multiply(this.matrix, rotateX(this._angleX));
+  this.matrix = multiply(this.matrix, translateGL(0, 0, 1));
+  this.matrix = multiply(this.matrix, smooshMatrix);
+
+  gl.uniform1f(gl._zFactorLocation, this._zFactor);
+  gl.uniformMatrix4fv(gl._matrixLocation, false, this.matrix);
+}
+
 prototype._render = function(scene, items) {
   var gl = this.context(),
       o = this._origin,
@@ -109,6 +142,11 @@ prototype._render = function(scene, items) {
   gl._ty = 0;
   gl._triangleGeometry = [];
   gl._triangleColor = [];
+  if (gl._images) {
+    for (i = 0; i < gl._images.length; i++) {
+      gl.deleteTexture(gl._images[i].texture);
+    }
+  }
   gl._images = [];
   gl._randomZ = this._randomZ;
 
@@ -123,7 +161,16 @@ prototype._render = function(scene, items) {
   } else {
     gl._fullRedraw = true;
   }
-  // console.log((items ? items.length : 'null') + ' dirty items.');
+
+  if (this._depthTest) {
+    gl.enable(gl.DEPTH_TEST);
+  } else {
+    gl.disable(gl.DEPTH_TEST);
+  }
+
+  this._updateUniforms();
+
+  this.clear();
 
   this.draw(gl, scene, b);
 
@@ -134,17 +181,9 @@ prototype._render = function(scene, items) {
   imgInfo.h = gl.canvas.height / gl._ratio;
   gl._images.push(imgInfo);
 
-  this._triangleBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleGeometry), gl.STATIC_DRAW);
-
-  this._triangleColorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(gl._triangleColor), gl.STATIC_DRAW);
-
-  // console.log(gl._triangleGeometry.length/3 + ' triangles.');
-
-  this.frame();
+  for (i = 0; i < gl._images.length; i++) {
+    drawImage(gl, gl._images[i], this.matrix);
+  }
 
   if (items) {
     for (i = 0; i < items.length; i++) {
@@ -152,64 +191,15 @@ prototype._render = function(scene, items) {
     }
   }
   gl._fullRedraw = false;
+  this._lastScene = scene;
 
   return this;
 };
 
 prototype.frame = function() {
-  var gl = this.context();
-
-  this.clear();
-
-  gl.useProgram(gl._shaderProgram);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleBuffer);
-  gl.vertexAttribPointer(gl._coordLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(gl._coordLocation);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, this._triangleColorBuffer);
-  gl.vertexAttribPointer(gl._colorLocation, 4, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(gl._colorLocation);
-
-  var width = gl.canvas.width / gl._ratio;
-  var height = gl.canvas.height / gl._ratio;
-
-  var smooshMatrix = [
-    2/width, 0, 0, 0,
-    0, -2/width, 0, 0,
-    0, 0, 1, 0,
-    -1, height/width, 0, 1
-  ];
-
-  var matrix = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ];
-
-  if (this._depthTest) {
-    gl.enable(gl.DEPTH_TEST);
-  } else {
-    gl.disable(gl.DEPTH_TEST);
+  if (this._lastScene) {
+    this._render(this._lastScene, []);
   }
-
-  matrix = multiply(matrix, perspective(Math.PI/2, width/height, 0.1, 3000));
-  matrix = multiply(matrix, translateGL(this._translateX, this._translateY, (this._translateZ - 1)*height/width));
-  matrix = multiply(matrix, rotateZ(this._angleZ));
-  matrix = multiply(matrix, rotateY(this._angleY));
-  matrix = multiply(matrix, rotateX(this._angleX));
-  matrix = multiply(matrix, translateGL(0, 0, 1));
-  matrix = multiply(matrix, smooshMatrix);
-
-  gl.uniform1f(gl._zFactorLocation, this._zFactor);
-  gl.uniformMatrix4fv(gl._matrixLocation, false, matrix);
-  gl.drawArrays(gl.TRIANGLES, 0, gl._triangleGeometry.length / 3);
-
-  gl._images.forEach(function(texInfo) {
-    drawImage(gl, texInfo, matrix);
-  });
-
   return this;
 };
 

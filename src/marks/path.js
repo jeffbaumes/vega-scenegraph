@@ -6,7 +6,7 @@ import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import translateItem from '../util/svg/translateItem';
 import {visit} from '../util/visit';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForPath from '../path/geometryForPath';
 import geometryForItem from '../path/geometryForItem';
 
@@ -38,6 +38,10 @@ function drawGL(context, scene, bounds) {
     context._ty += y;
 
     if (context._fullRedraw || item._dirty || !item._geom) {
+      if (item._geom) {
+        context.deleteBuffer(item._geom.triangleBuffer);
+        context.deleteBuffer(item._geom.colorBuffer);
+      }
       var shapeGeom = geometryForPath(context, path);
       item._geom = geometryForItem(context, item, shapeGeom);
     }

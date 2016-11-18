@@ -5,7 +5,7 @@ import stroke from '../util/canvas/stroke';
 import fill from '../util/canvas/fill';
 import translateItem from '../util/svg/translateItem';
 import geometryForItem from '../path/geometryForItem';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 
 function attr(emit, item, renderer) {
   var id = null, defs, c;
@@ -159,6 +159,10 @@ function drawGL(context, scene, bounds) {
 
     // draw group background
     if (context._fullRedraw || group._dirty || !group._geom) {
+      if (group._geom) {
+        context.deleteBuffer(group._geom.triangleBuffer);
+        context.deleteBuffer(group._geom.colorBuffer);
+      }
       offset = group.stroke ? 0.5 : 0;
       var shapeGeom = rectangle(context, group, offset, offset);
       group._geom = geometryForItem(context, group, shapeGeom);

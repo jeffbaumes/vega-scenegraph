@@ -2,7 +2,7 @@ import boundStroke from '../bound/boundStroke';
 import context from '../bound/boundContext';
 import {drawOne} from '../util/canvas/draw';
 import {hitPath} from '../util/canvas/pick';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
 
 export default function(type, shape) {
@@ -52,6 +52,10 @@ export default function(type, shape) {
         }
       }
       if (context._fullRedraw || dirty || !item._geom) {
+        if (item._geom) {
+          context.deleteBuffer(item._geom.triangleBuffer);
+          context.deleteBuffer(item._geom.colorBuffer);
+        }
         var shapeGeom = shape(context, scene.items);
         item._geom = geometryForItem(context, item, shapeGeom);
       }

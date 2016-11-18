@@ -4,7 +4,7 @@ import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import translateItem from '../util/svg/translateItem';
 import {visit} from '../util/visit';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
 
 export default function(type, shape) {
@@ -40,6 +40,10 @@ export default function(type, shape) {
       context._ty += y;
 
       if (context._fullRedraw || item._dirty || !item._geom) {
+        if (item._geom) {
+          context.deleteBuffer(item._geom.triangleBuffer);
+          context.deleteBuffer(item._geom.colorBuffer);
+        }
         var shapeGeom = shape(context, item);
         item._geom = geometryForItem(context, item, shapeGeom);
       }

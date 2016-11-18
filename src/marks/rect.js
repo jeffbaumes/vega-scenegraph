@@ -3,7 +3,7 @@ import {rectangle} from '../path/shapes';
 import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import {visit} from '../util/visit';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
 
 function attr(emit, item) {
@@ -30,6 +30,10 @@ function drawGL(context, scene, bounds) {
     if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
 
     if (context._fullRedraw || item._dirty || !item._geom) {
+      if (item._geom) {
+        context.deleteBuffer(item._geom.triangleBuffer);
+        context.deleteBuffer(item._geom.colorBuffer);
+      }
       var shapeGeom = rectangle(context, item);
       item._geom = geometryForItem(context, item, shapeGeom);
     }

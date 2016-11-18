@@ -5,8 +5,6 @@ import {default as vg_rect} from './rectangle';
 import {default as vg_trail} from './trail';
 
 import geometryForPath from './geometryForPath';
-import geometryForItem from './geometryForItem';
-import {drawGeometry} from '../util/webgl/draw';
 
 import {
   arc as d3_arc,

@@ -2,9 +2,8 @@ import boundStroke from '../bound/boundStroke';
 import {visit} from '../util/visit';
 import {pick} from '../util/canvas/pick';
 import stroke from '../util/canvas/stroke';
-import strokeGL from '../util/webgl/stroke';
 import translateItem from '../util/svg/translateItem';
-import {drawGeometry} from '../util/webgl/draw';
+import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
 
 function attr(emit, item) {
@@ -59,6 +58,10 @@ function drawGL(context, scene, bounds) {
     var x1, y1, x2, y2, line, shapeGeom;
     if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
     if (context._fullRedraw || item._dirty || !item._geom) {
+      if (item._geom) {
+        context.deleteBuffer(item._geom.triangleBuffer);
+        context.deleteBuffer(item._geom.colorBuffer);
+      }
       x1 = item.x || 0;
       y1 = item.y || 0;
       x2 = item.x2 != null ? item.x2 : x1;
