@@ -51,11 +51,7 @@ export default function(type, shape) {
           break;
         }
       }
-      if (context._fullRedraw || dirty || !item._geom) {
-        if (item._geom) {
-          context.deleteBuffer(item._geom.triangleBuffer);
-          context.deleteBuffer(item._geom.colorBuffer);
-        }
+      if (context._fullRedraw || dirty || !item._geom || item._geom.deleted) {
         var shapeGeom = shape(context, scene.items);
         item._geom = geometryForItem(context, item, shapeGeom);
       }

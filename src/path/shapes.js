@@ -32,6 +32,7 @@ var arcShape    = d3_arc().cornerRadius(cr).padAngle(pa),
     lineShape   = d3_line().x(x).y(y).defined(def),
     trailShape  = vg_trail().x(x).y(y).defined(def).size(wh),
     rectShape   = vg_rect().x(x).y(y).width(w).height(h).cornerRadius(cr),
+    rectShapeGL = vg_rect().x(0).y(0).width(w).height(h).cornerRadius(cr),
     symbolShape = d3_symbol().type(type).size(size);
 
 export function arc(context, item) {
@@ -59,7 +60,7 @@ export function shape(context, item) {
   if (context.arc) {
     return s.context(context)(item);
   }
-  return geometryForPath(context, s.context(null)(item), 1);
+  return geometryForPath(context, s.context(null)(item), 0.1);
 }
 
 export function line(context, items) {
@@ -73,10 +74,11 @@ export function line(context, items) {
 }
 
 export function rectangle(context, item, x, y) {
-  if (context.arc) {
-    return rectShape.context(context)(item, x, y);
-  }
-  return geometryForPath(context, rectShape.context(null)(item, x, y), 0.1);
+  return rectShape.context(context)(item, x, y);
+}
+
+export function rectangleGL(context, item, x, y) {
+  return geometryForPath(context, rectShapeGL.context(null)(item, x, y), 0.1);
 }
 
 export function symbol(context, item) {

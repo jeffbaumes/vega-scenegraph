@@ -1,4 +1,4 @@
-import {rectangle} from '../path/shapes';
+import {rectangle, rectangleGL} from '../path/shapes';
 import boundStroke from '../bound/boundStroke';
 import {visit, pickVisit} from '../util/visit';
 import stroke from '../util/canvas/stroke';
@@ -158,13 +158,9 @@ function drawGL(context, scene, bounds) {
     context._textContext.translate(gx, gy);
 
     // draw group background
-    if (context._fullRedraw || group._dirty || !group._geom) {
-      if (group._geom) {
-        context.deleteBuffer(group._geom.triangleBuffer);
-        context.deleteBuffer(group._geom.colorBuffer);
-      }
+    if (context._fullRedraw || group._dirty || !group._geom || group._geom.deleted) {
       offset = group.stroke ? 0.5 : 0;
-      var shapeGeom = rectangle(context, group, offset, offset);
+      var shapeGeom = rectangleGL(context, group, offset, offset);
       group._geom = geometryForItem(context, group, shapeGeom);
     }
     drawGeometry(group._geom, context, group);

@@ -1,5 +1,5 @@
 import boundStroke from '../bound/boundStroke';
-import {rectangle} from '../path/shapes';
+import {rectangle, rectangleGL} from '../path/shapes';
 import {drawAll} from '../util/canvas/draw';
 import {pickPath} from '../util/canvas/pick';
 import {visit} from '../util/visit';
@@ -29,15 +29,20 @@ function drawGL(context, scene, bounds) {
   visit(scene, function(item) {
     if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
 
-    if (context._fullRedraw || item._dirty || !item._geom) {
-      if (item._geom) {
-        context.deleteBuffer(item._geom.triangleBuffer);
-        context.deleteBuffer(item._geom.colorBuffer);
-      }
-      var shapeGeom = rectangle(context, item);
+    var x = item.x || 0,
+        y = item.y || 0;
+
+    context._tx += x;
+    context._ty += y;
+
+    if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
+      var shapeGeom = rectangleGL(context, item);
       item._geom = geometryForItem(context, item, shapeGeom);
     }
     drawGeometry(item._geom, context, item);
+
+    context._tx -= x;
+    context._ty -= y;
   });
 }
 

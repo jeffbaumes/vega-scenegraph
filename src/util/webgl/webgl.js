@@ -7,6 +7,11 @@ export default function(w, h) {
 
   var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
+  gl._pathCache = {};
+  gl._pathCacheSize = 0;
+  gl._itemCache = {};
+  gl._itemCacheSize = 0;
+
   gl._textCanvas = document.createElement('canvas');
   gl._textCanvas.width = w;
   gl._textCanvas.height = h;
@@ -26,9 +31,10 @@ export default function(w, h) {
     'attribute vec4 color;' +
     'uniform mat4 matrix;' +
     'uniform float zFactor;' +
+    'uniform vec2 offset;' +
     'varying vec4 vColor;' +
     'void main(void) {' +
-       ' gl_Position = matrix * vec4(coordinates.x, coordinates.y, coordinates.z*zFactor - 1.0, 1.0);' +
+       ' gl_Position = matrix * vec4(coordinates.x + offset.x, coordinates.y + offset.y, coordinates.z*zFactor - 1.0, 1.0);' +
        ' vColor = color;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -61,6 +67,7 @@ export default function(w, h) {
   gl._colorLocation = gl.getAttribLocation(gl._shaderProgram, 'color');
   gl._matrixLocation = gl.getUniformLocation(gl._shaderProgram, 'matrix');
   gl._zFactorLocation = gl.getUniformLocation(gl._shaderProgram, 'zFactor');
+  gl._offsetLocation = gl.getUniformLocation(gl._shaderProgram, 'offset');
 
 // -------------------------------------------------------------------------
 // BEGIN: Adapted from https://github.com/greggman/webgl-fundamentals

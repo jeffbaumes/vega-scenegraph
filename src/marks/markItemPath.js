@@ -39,11 +39,7 @@ export default function(type, shape) {
       context._tx += x;
       context._ty += y;
 
-      if (context._fullRedraw || item._dirty || !item._geom) {
-        if (item._geom) {
-          context.deleteBuffer(item._geom.triangleBuffer);
-          context.deleteBuffer(item._geom.colorBuffer);
-        }
+      if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
         var shapeGeom = shape(context, item);
         item._geom = geometryForItem(context, item, shapeGeom);
       }

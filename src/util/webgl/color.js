@@ -3,6 +3,9 @@ import {color} from 'd3-color';
 var cache = {};
 
 export default function(context, item, value) {
+  if (!value) {
+    return [1.0, 1.0, 1.0];
+  }
   if (value.id) {
     // TODO: support gradients
     return [1.0, 1.0, 1.0];

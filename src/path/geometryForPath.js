@@ -3,18 +3,17 @@ import simplify from 'simplify-path';
 import contours from 'svg-path-contours';
 import triangulate from 'triangulate-contours';
 
-var cache = {};
-
 export default function(context, path, threshold) {
-  var key = path + ';' + context._tx + ';' + context._ty + ';' + context.z;
-  if (cache[key]) {
-    return cache[key];
+  var key = path;
+  if (context._pathCache[key]) {
+    return context._pathCache[key];
   }
 
   threshold = threshold || 1.0;
   if (!path) {
     return {lines: [], triangles: [], closed: false, z: 0};
   }
+
   // get a list of polylines/contours from svg contents
   var lines = contours(parse(path)), tri;
 
@@ -34,9 +33,7 @@ export default function(context, path, threshold) {
     tri = {positions: [], cells: []};
   }
 
-  var z = context._randomZ ? 0.25*(Math.random() - 0.5) : 0,
-      tx = context._tx + context._origin[0],
-      ty = context._ty + context._origin[1];
+  var z = context._randomZ ? 0.25*(Math.random() - 0.5) : 0;
 
   var triangles = [];
   var tcl = tri.cells.length,
@@ -47,10 +44,23 @@ export default function(context, path, threshold) {
     var p1 = tp[cell[0]];
     var p2 = tp[cell[1]];
     var p3 = tp[cell[2]];
-    triangles.push(p1[0] + tx, p1[1] + ty, z, p2[0] + tx, p2[1] + ty, z, p3[0] + tx, p3[1] + ty, z);
+    triangles.push(p1[0], p1[1], z, p2[0], p2[1], z, p3[0], p3[1], z);
   }
 
-  var geom = {lines: lines, triangles: triangles, closed: path.endsWith('Z'), z: z};
-  cache[key] = geom;
+  var geom = {
+    lines: lines,
+    triangles: triangles,
+    closed: path.endsWith('Z'),
+    z: z,
+    key: key
+  };
+
+  context._pathCache[key] = geom;
+  context._pathCacheSize++;
+  if (context._pathCacheSize > 10000) {
+    context._pathCache = {};
+    context._pathCacheSize = 0;
+    console.log('Geometry cache cleared.');
+  }
   return geom;
 }

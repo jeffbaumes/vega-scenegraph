@@ -37,11 +37,7 @@ function drawGL(context, scene, bounds) {
     context._tx += x;
     context._ty += y;
 
-    if (context._fullRedraw || item._dirty || !item._geom) {
-      if (item._geom) {
-        context.deleteBuffer(item._geom.triangleBuffer);
-        context.deleteBuffer(item._geom.colorBuffer);
-      }
+    if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
       var shapeGeom = geometryForPath(context, path);
       item._geom = geometryForItem(context, item, shapeGeom);
     }

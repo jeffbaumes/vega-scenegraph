@@ -57,11 +57,7 @@ function drawGL(context, scene, bounds) {
   visit(scene, function(item) {
     var x1, y1, x2, y2, line, shapeGeom;
     if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
-    if (context._fullRedraw || item._dirty || !item._geom) {
-      if (item._geom) {
-        context.deleteBuffer(item._geom.triangleBuffer);
-        context.deleteBuffer(item._geom.colorBuffer);
-      }
+    if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
       x1 = item.x || 0;
       y1 = item.y || 0;
       x2 = item.x2 != null ? item.x2 : x1;
@@ -70,6 +66,7 @@ function drawGL(context, scene, bounds) {
         lines: [[[x1, y1], [x2, y2]]],
         closed: false
       };
+      shapeGeom.key = JSON.stringify(shapeGeom.lines);
       item._geom = geometryForItem(context, item, shapeGeom);
     }
     drawGeometry(item._geom, context, item);
