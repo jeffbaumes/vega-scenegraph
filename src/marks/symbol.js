@@ -1,26 +1,208 @@
 import {symbol} from '../path/shapes';
-import markItemPath from './markItemPath';
+import boundStroke from '../bound/boundStroke';
+import color from '../util/webgl/color';
+import context from '../bound/boundContext';
+import {drawAll} from '../util/canvas/draw';
+import {pickPath} from '../util/canvas/pick';
+import translateItem from '../util/svg/translateItem';
+import {visit} from '../util/visit';
+import drawGeometry from '../util/webgl/drawGeometry';
+import geometryForItem from '../path/geometryForItem';
+import geometryForShape from '../path/geometryForShape';
 
-var shapeMap = {
-  undefined: 0,
-  circle: 0,
-  cross: 1,
-  diamond: 2,
-  square: 3,
-  star: 4,
-  triangle: 5,
-  wye: 6
-};
-
-var fields = ['shape', 'size', 'stroke', 'fill', 'strokeOpacity', 'fillOpacity', 'opacity', 'strokeWidth', 'strokeCap'];
-
-function key(item) {
-  var value = item.size;
-  value *= 6;
-  value += shapeMap[item.shape];
-  value *= 20;
-  value += item.strokeWidth;
-  return value;
+function attr(emit, item) {
+  emit('transform', translateItem(item));
+  emit('d', symbol(null, item));
 }
 
-export default markItemPath('symbol', symbol, key);
+function bound(bounds, item) {
+  symbol(context(bounds), item);
+  return boundStroke(bounds, item)
+    .translate(item.x || 0, item.y || 0);
+}
+
+function draw(context, item) {
+  var x = item.x || 0,
+      y = item.y || 0;
+  context.translate(x, y);
+  context.beginPath();
+  symbol(context, item);
+  context.translate(-x, -y);
+}
+
+function drawGL(gl, scene, bounds) {
+  var unit, pos, size,
+      strokeWidth, strokeOpacity, strokeColor,
+      fillOpacity, fillColor,
+      unitBuffer, posBuffer, sizeBuffer,
+      strokeWidthBuffer, strokeOpacityBuffer, strokeColorBuffer,
+      fillOpacityBuffer, fillColorBuffer,
+      ivpf, ivpf3,
+      numPts = scene.items.length,
+      xu = 0, yu = 0, w = 1, h = 1, j, unitItem,
+      sg = scene._symbolGeom;
+
+  ivpf = ivpf3 = 0;
+
+  if (sg && sg.numPts === numPts) {
+    unit = sg.unit;
+    unitBuffer = sg.unitBuffer;
+    pos = sg.pos;
+    size = sg.size;
+    strokeWidth = sg.strokeWidth;
+    strokeOpacity = sg.strokeOpacity;
+    strokeColor = sg.strokeColor;
+    fillOpacity = sg.fillOpacity;
+    fillColor = sg.fillColor;
+  } else {
+    if (sg) {
+      gl.deleteBuffer(sg.unitBuffer);
+    }
+    unit = new Float32Array(3 * numPts * 2);
+    pos = new Float32Array(3 * numPts * 3);
+    size = new Float32Array(3 * numPts);
+    strokeWidth = new Float32Array(3 * numPts);
+    strokeOpacity = new Float32Array(3 * numPts);
+    strokeColor = new Float32Array(3 * numPts * 3);
+    fillOpacity = new Float32Array(3 * numPts);
+    fillColor = new Float32Array(3 * numPts * 3);
+
+    unitItem = [
+      xu, yu - h * 2,
+      xu - w * Math.sqrt(3.0), yu + h,
+      xu + w * Math.sqrt(3.0), yu + h
+    ];
+    for (j = 0; j < numPts * unitItem.length; j += 1) {
+      unit[j] = unitItem[j % unitItem.length];
+    }
+  }
+
+  if (sg) {
+    gl.deleteBuffer(sg.posBuffer);
+    gl.deleteBuffer(sg.sizeBuffer);
+    gl.deleteBuffer(sg.strokeWidthBuffer);
+    gl.deleteBuffer(sg.strokeOpacityBuffer);
+    gl.deleteBuffer(sg.strokeColorBuffer);
+    gl.deleteBuffer(sg.fillOpacityBuffer);
+    gl.deleteBuffer(sg.fillColorBuffer);
+  }
+
+  visit(scene, function(item) {
+    var x = (item.x || 0) + gl._tx + gl._origin[0],
+        y = (item.y || 0) + gl._ty + gl._origin[1],
+        fc = color(gl, item, item.fill),
+        sc = color(gl, item, item.stroke),
+        op = item.opacity == null ? 1 : item.opacity,
+        fo = op * (item.fill == null ? 0 : 1) * (item.fillOpacity == null ? 1 : item.fillOpacity),
+        so = op * (item.stroke == null ? 0 : 1) * (item.strokeOpacity == null ? 1 : item.strokeOpacity),
+        sw = item.strokeWidth == null ? 1 : item.strokeWidth,
+        sz = Math.sqrt((item.size == null ? 64 : item.size) / Math.PI);
+
+    for (j = 0; j < 3; j += 1, ivpf += 1, ivpf3 += 3) {
+      pos[ivpf3] = x;
+      pos[ivpf3 + 1] = y;
+      pos[ivpf3 + 2] = 0;
+      size[ivpf] = sz;
+      strokeWidth[ivpf] = sw;
+      strokeOpacity[ivpf] = so;
+      strokeColor[ivpf3] = sc[0];
+      strokeColor[ivpf3 + 1] = sc[1];
+      strokeColor[ivpf3 + 2] = sc[2];
+      fillOpacity[ivpf] = fo;
+      fillColor[ivpf3] = fc[0];
+      fillColor[ivpf3 + 1] = fc[1];
+      fillColor[ivpf3 + 2] = fc[2];
+    }
+  });
+
+  gl.useProgram(gl._symbolShaderProgram);
+
+  if (!unitBuffer) {
+    unitBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, unitBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, unit, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(gl._symbolUnitLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(gl._symbolUnitLocation);
+  } else {
+    gl.bindBuffer(gl.ARRAY_BUFFER, unitBuffer);
+    gl.vertexAttribPointer(gl._symbolUnitLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(gl._symbolUnitLocation);
+  }
+
+  posBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolPosLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolPosLocation);
+
+  sizeBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, size, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolSizeLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolSizeLocation);
+
+  strokeWidthBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, strokeWidthBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, strokeWidth, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolStrokeWidthLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolStrokeWidthLocation);
+
+  strokeOpacityBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, strokeOpacityBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, strokeOpacity, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolStrokeOpacityLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolStrokeOpacityLocation);
+
+  strokeColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, strokeColorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, strokeColor, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolStrokeColorLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolStrokeColorLocation);
+
+  fillOpacityBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, fillOpacityBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, fillOpacity, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolFillOpacityLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolFillOpacityLocation);
+
+  fillColorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, fillColorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, fillColor, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolFillColorLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolFillColorLocation);
+
+  gl.uniformMatrix4fv(gl._symbolMatrixLocation, false, gl._matrix);
+
+  gl.drawArrays(gl.TRIANGLES, 0, numPts * 3);
+
+  scene._symbolGeom = {
+    numPts: numPts,
+    unit: unit,
+    pos: pos,
+    size: size,
+    strokeWidth: strokeWidth,
+    strokeOpacity: strokeOpacity,
+    strokeColor: strokeColor,
+    fillOpacity: fillOpacity,
+    fillColor: fillColor,
+    unitBuffer: unitBuffer,
+    posBuffer: posBuffer,
+    sizeBuffer: sizeBuffer,
+    strokeWidthBuffer: strokeWidthBuffer,
+    strokeOpacityBuffer: strokeOpacityBuffer,
+    strokeColorBuffer: strokeColorBuffer,
+    fillOpacityBuffer: fillOpacityBuffer,
+    fillColorBuffer: fillColorBuffer
+  };
+}
+
+export default {
+  type:   'symbol',
+  tag:    'path',
+  nested: false,
+  attr:   attr,
+  bound:  bound,
+  draw:   drawAll(draw),
+  drawGL: drawGL,
+  pick:   pickPath(draw)
+};

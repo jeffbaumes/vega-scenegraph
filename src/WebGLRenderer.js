@@ -127,6 +127,8 @@ prototype._updateUniforms = function() {
   this.matrix = multiply(this.matrix, translateGL(0, 0, 1));
   this.matrix = multiply(this.matrix, smooshMatrix);
 
+  gl._matrix = this.matrix;
+
   gl.uniform1f(gl._zFactorLocation, this._zFactor);
   gl.uniformMatrix4fv(gl._matrixLocation, false, this.matrix);
 }

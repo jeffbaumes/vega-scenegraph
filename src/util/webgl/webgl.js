@@ -175,5 +175,85 @@ export default function(w, h) {
 // END: Adapted from https://github.com/greggman/webgl-fundamentals
 // -------------------------------------------------------------------------
 
+  vertCode = [
+    // 'precision highp float;',
+    'attribute vec3 pos;',
+    'attribute vec3 fillColor;',
+    'attribute vec3 strokeColor;',
+    'attribute float fillOpacity;',
+    'attribute float strokeWidth;',
+    'attribute float size;',
+    'attribute float strokeOpacity;',
+    'attribute vec2 unit;',
+    'uniform mat4 matrix;',
+    'varying vec4 fillColorVar;',
+    'varying vec4 strokeColorVar;',
+    'varying float sizeVar;',
+    'varying float strokeWidthVar;',
+    'varying vec3 unitVar;',
+    'void main(void)',
+    '{',
+    '  strokeWidthVar = strokeWidth;',
+    '  fillColorVar = vec4(fillColor, fillOpacity);',
+    '  strokeColorVar = vec4(strokeColor, strokeOpacity);',
+    '  sizeVar = size;',
+    '  float m = size + strokeWidth;',
+    '  unitVar = vec3(unit, 1.0);',
+    '  gl_Position = matrix * vec4(pos.x + m * unit.x, pos.y + m * unit.y, -1.0, 1.0);',
+    '}'
+  ].join('\n');
+  vertShader = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertShader, vertCode);
+  gl.compileShader(vertShader);
+  if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+    console.log(gl.getShaderInfoLog(vertShader));
+  }
+
+  fragCode = [
+    'precision mediump float;',
+    'varying vec4 fillColorVar;',
+    'varying vec4 strokeColorVar;',
+    'varying vec3 unitVar;',
+    'varying float sizeVar;',
+    'varying float strokeWidthVar;',
+    'void main () {',
+    '  float endStep;',
+    '  float size = length(unitVar.xy);',
+    '  if (size > 1.0)',
+    '    discard;',
+    '  endStep = sizeVar / (sizeVar + strokeWidthVar);',
+    '  float antialiasDist = 3.0 / (2.0 * sizeVar);',
+    '  if (size < endStep) {',
+    '    float step = smoothstep(endStep - antialiasDist, endStep, size);',
+    '    gl_FragColor = mix(fillColorVar, strokeColorVar, step);',
+    '  } else {',
+    '    float step = smoothstep(1.0 - antialiasDist, 1.0, size);',
+    '    gl_FragColor = mix(strokeColorVar, vec4 (strokeColorVar.rgb, 0.0), step);',
+    '  }',
+    '}'
+  ].join('\n');
+  fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragShader, fragCode);
+  gl.compileShader(fragShader);
+  if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+    console.log(gl.getShaderInfoLog(fragShader));
+  }
+
+  shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vertShader);
+  gl.attachShader(shaderProgram, fragShader);
+  gl.linkProgram(shaderProgram);
+
+  gl._symbolShaderProgram = shaderProgram;
+  gl._symbolPosLocation = gl.getAttribLocation(shaderProgram, 'pos');
+  gl._symbolFillColorLocation = gl.getAttribLocation(shaderProgram, 'fillColor');
+  gl._symbolStrokeColorLocation = gl.getAttribLocation(shaderProgram, 'strokeColor');
+  gl._symbolFillOpacityLocation = gl.getAttribLocation(shaderProgram, 'fillOpacity');
+  gl._symbolStrokeWidthLocation = gl.getAttribLocation(shaderProgram, 'strokeWidth');
+  gl._symbolSizeLocation = gl.getAttribLocation(shaderProgram, 'size');
+  gl._symbolStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
+  gl._symbolUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
+  gl._symbolMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
+
   return canvas;
 }
