@@ -11,6 +11,8 @@ export default function(w, h) {
   gl._pathCacheSize = 0;
   gl._itemCache = {};
   gl._itemCacheSize = 0;
+  gl._shapeCache = {};
+  gl._shapeCacheSize = 0;
 
   gl._textCanvas = document.createElement('canvas');
   gl._textCanvas.width = w;

@@ -6,8 +6,9 @@ import translateItem from '../util/svg/translateItem';
 import {visit} from '../util/visit';
 import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
+import geometryForShape from '../path/geometryForShape';
 
-export default function(type, shape) {
+export default function(type, shape, key) {
 
   function attr(emit, item) {
     emit('transform', translateItem(item));
@@ -34,14 +35,19 @@ export default function(type, shape) {
       if (bounds && !bounds.intersects(item.bounds)) return; // bounds check
 
       var x = item.x || 0,
-          y = item.y || 0;
+          y = item.y || 0,
+          i, shapeGeom;
 
       context._tx += x;
       context._ty += y;
 
       if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
-        var shapeGeom = shape(context, item);
-        item._geom = geometryForItem(context, item, shapeGeom);
+        if (key) {
+          item._geom = geometryForShape(context, item, shape, key);
+        } else {
+          shapeGeom = shape(context, item);
+          item._geom = geometryForItem(context, item, shapeGeom);
+        }
       }
       drawGeometry(item._geom, context, item);
 

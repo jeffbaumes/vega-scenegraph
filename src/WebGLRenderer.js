@@ -149,6 +149,12 @@ prototype._render = function(scene, items) {
   }
   gl._images = [];
   gl._randomZ = this._randomZ;
+  gl._pathCacheHit = 0;
+  gl._pathCacheMiss = 0;
+  gl._itemCacheHit = 0;
+  gl._itemCacheMiss = 0;
+  gl._shapeCacheHit = 0;
+  gl._shapeCacheMiss = 0;
 
   b = (!items || this._redraw)
     ? (this._redraw = false, null)
@@ -192,6 +198,13 @@ prototype._render = function(scene, items) {
   }
   gl._fullRedraw = false;
   this._lastScene = scene;
+
+  // console.log('Path cache hit: ' + gl._pathCacheHit);
+  // console.log('Path cache miss: ' + gl._pathCacheMiss);
+  // console.log('Item cache hit: ' + gl._itemCacheHit);
+  // console.log('Item cache miss: ' + gl._itemCacheMiss);
+  // console.log('Shape cache hit: ' + gl._shapeCacheHit);
+  // console.log('Shape cache miss: ' + gl._shapeCacheMiss);
 
   return this;
 };

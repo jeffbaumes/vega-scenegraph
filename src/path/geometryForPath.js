@@ -6,8 +6,10 @@ import triangulate from 'triangulate-contours';
 export default function(context, path, threshold) {
   var key = path;
   if (context._pathCache[key]) {
+    context._pathCacheHit++;
     return context._pathCache[key];
   }
+  context._pathCacheMiss++;
 
   threshold = threshold || 1.0;
   if (!path) {

@@ -19,8 +19,10 @@ export default function(context, item, shapeGeom, opacity) {
       key = shapeGeom.key + ';' + lw + ';' + lc + ';' + closed + ';' + item.fill + ';' + item.fillOpacity + ';' + item.stroke + ';' + item.strokeOpacity;
 
   if (context._itemCache[key]) {
+    context._itemCacheHit++;
     return context._itemCache[key];
   }
+  context._itemCacheMiss++;
 
   if (item.fill === 'transparent') {
     fillOpacity = 0;
