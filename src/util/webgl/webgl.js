@@ -458,7 +458,7 @@ export default function(w, h) {
     '    }',
     '  }',
     '  gl_FragColor = mix(c1, c2, step);',
-    // '  gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);',
+    // '  gl_FragColor = vec4(vec3(dist), 1.0);',
     '}'
   ].join('\n');
   fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -484,6 +484,129 @@ export default function(w, h) {
   gl._symbolStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
   gl._symbolUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
   gl._symbolMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
+
+  // rect shader
+
+  vertCode = [
+    'attribute vec3 pos;',
+    'attribute vec3 fillColor;',
+    'attribute vec3 strokeColor;',
+    'attribute float fillOpacity;',
+    'attribute float strokeWidth;',
+    'attribute float strokeOpacity;',
+    'attribute vec2 size;',
+    'attribute vec2 unit;',
+    'uniform mat4 matrix;',
+    'varying vec4 fillColorVar;',
+    'varying vec4 strokeColorVar;',
+    'varying float strokeWidthVar;',
+    'varying float factorVar;',
+    'varying vec2 sizeVar;',
+    'varying vec2 unitVar;',
+    'void main(void)',
+    '{',
+    '  strokeWidthVar = strokeWidth;',
+    '  fillColorVar = vec4(fillColor, fillOpacity);',
+    '  strokeColorVar = vec4(strokeColor, strokeOpacity);',
+    '  sizeVar = size;',
+    '  unitVar = unit;',
+    '  factorVar = max(size.x, size.y) + strokeWidth + 1.0;',
+    '  gl_Position = matrix * vec4(pos.xy + factorVar*unitVar - 0.5*strokeWidth - 0.5, -1.0, 1.0);',
+    '}'
+  ].join('\n');
+  vertShader = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertShader, vertCode);
+  gl.compileShader(vertShader);
+  if (!gl.getShaderParameter(vertShader, gl.COMPILE_STATUS)) {
+    console.log(gl.getShaderInfoLog(vertShader));
+  }
+
+  fragCode = [
+    'precision mediump float;',
+    'const float PI = 3.1415926535897932384626433832795;',
+    'varying vec4 fillColorVar;',
+    'varying vec4 strokeColorVar;',
+    'varying float strokeWidthVar;',
+    'varying float factorVar;',
+    'varying vec2 unitVar;',
+    'varying vec2 sizeVar;',
+
+    'float distToLine(vec2 pt1, vec2 pt2, vec2 testPt)',
+    '{',
+    '  vec2 lineDir = pt2 - pt1;',
+    '  vec2 perpDir = vec2(lineDir.y, -lineDir.x);',
+    '  vec2 dirToPt1 = pt1 - testPt;',
+    '  return dot(normalize(perpDir), dirToPt1);',
+    '}',
+
+    'void main () {',
+    '  float delta = (0.5 + 0.5*strokeWidthVar)/factorVar;',
+    '  float xmax = (0.5 + 0.5*strokeWidthVar + sizeVar.x)/factorVar;',
+    '  float ymax = (0.5 + 0.5*strokeWidthVar + sizeVar.y)/factorVar;',
+    '  vec2 p1 = vec2(delta, delta);',
+    '  vec2 p2 = vec2(xmax, delta);',
+    '  vec2 p3 = vec2(xmax, ymax);',
+    '  vec2 p4 = vec2(delta, ymax);',
+    '  float dist = distToLine(p1, p2, unitVar);',
+    '  dist = min(dist, distToLine(p2, p3, unitVar));',
+    '  dist = min(dist, distToLine(p3, p4, unitVar));',
+    '  dist = min(dist, distToLine(p4, p1, unitVar));',
+    '  dist = 1.0 - dist;',
+
+    '  float endStep = 1.0;',
+    '  float antialiasDist = 0.5 / factorVar;',
+    '  float widthDist = 0.5*strokeWidthVar / factorVar;',
+    '  vec4 c1;',
+    '  vec4 c2;',
+    '  float step;',
+    '  if (dist < endStep) {',
+    '    step = smoothstep(endStep - widthDist - antialiasDist, endStep - widthDist + antialiasDist, dist);',
+    '    if (fillColorVar.a > 0.0) {',
+    '      c1 = fillColorVar;',
+    '    } else {',
+    '      c1 = vec4(strokeColorVar.rgb, 0.0);',
+    '    }',
+    '    if (strokeWidthVar > 0.0) {',
+    '      c2 = strokeColorVar;',
+    '    } else {',
+    '      c2 = vec4(fillColorVar.rgb, 0.0);',
+    '    }',
+    '  } else {',
+    '    step = smoothstep(endStep + widthDist - antialiasDist, endStep + widthDist + antialiasDist, dist);',
+    '    if (strokeWidthVar > 0.0) {',
+    '      c1 = strokeColorVar;',
+    '      c2 = vec4(strokeColorVar.rgb, 0.0);',
+    '    } else {',
+    '      c1 = vec4(fillColorVar.rgb, 0.0);',
+    '      c2 = vec4(fillColorVar.rgb, 0.0);',
+    '    }',
+    '  }',
+    '  gl_FragColor = mix(c1, c2, step);',
+    // '  gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);',
+    '}'
+  ].join('\n');
+  fragShader = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragShader, fragCode);
+  gl.compileShader(fragShader);
+  if (!gl.getShaderParameter(fragShader, gl.COMPILE_STATUS)) {
+    console.log(gl.getShaderInfoLog(fragShader));
+  }
+
+  shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vertShader);
+  gl.attachShader(shaderProgram, fragShader);
+  gl.linkProgram(shaderProgram);
+
+  gl._rectShaderProgram = shaderProgram;
+  gl._rectPosLocation = gl.getAttribLocation(shaderProgram, 'pos');
+  gl._rectFillColorLocation = gl.getAttribLocation(shaderProgram, 'fillColor');
+  gl._rectStrokeColorLocation = gl.getAttribLocation(shaderProgram, 'strokeColor');
+  gl._rectFillOpacityLocation = gl.getAttribLocation(shaderProgram, 'fillOpacity');
+  gl._rectStrokeWidthLocation = gl.getAttribLocation(shaderProgram, 'strokeWidth');
+  gl._rectSizeLocation = gl.getAttribLocation(shaderProgram, 'size');
+  gl._rectStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
+  gl._rectUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
+  gl._rectMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
 
   return canvas;
 }

@@ -35,7 +35,7 @@ export default function(context, item, shapeGeom, opacity) {
         thickness: lw,
         cap: lc,
         join: 'miter',
-        miterLimit: 10,
+        miterLimit: 1,
         closed: !!shapeGeom.closed
     });
     for (li = 0; li < shapeGeom.lines.length; li++) {
