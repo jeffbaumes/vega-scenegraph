@@ -18,12 +18,6 @@ export default function(context, item, shapeGeom, opacity) {
       val,
       key = shapeGeom.key + ';' + lw + ';' + lc + ';' + closed + ';' + item.fill + ';' + item.fillOpacity + ';' + item.stroke + ';' + item.strokeOpacity;
 
-  if (context._itemCache[key]) {
-    context._itemCacheHit++;
-    return context._itemCache[key];
-  }
-  context._itemCacheMiss++;
-
   if (item.fill === 'transparent') {
     fillOpacity = 0;
   }
@@ -125,21 +119,15 @@ export default function(context, item, shapeGeom, opacity) {
     colorBuffer: colorBuffer,
     numTriangles: n
   };
-  if (context._itemCacheSize > 10000) {
-    for (v in context._itemCache) {
-      if (context._itemCache.hasOwnProperty(v)) {
-        context.deleteBuffer(context._itemCache[v].triangleBuffer);
-        context.deleteBuffer(context._itemCache[v].colorBuffer);
-        context._itemCache[v].deleted = true;
-      }
+
+  if (item._geom) {
+    if (item._geom.triangleBuffer) {
+      context.deleteBuffer(item._geom.triangleBuffer);
     }
-    context._lastColorBuffer = null;
-    context._lastTriangleBuffer = null;
-    context._itemCache = {};
-    context._itemCacheSize = 0;
-    console.log('Item geometry cache cleared.');
+    if (item._geom.colorBuffer) {
+      context.deleteBuffer(item._geom.colorBuffer);
+    }
   }
-  context._itemCache[key] = val;
-  context._itemCacheSize++;
+
   return val;
 }

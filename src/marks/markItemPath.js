@@ -8,7 +8,7 @@ import drawGeometry from '../util/webgl/drawGeometry';
 import geometryForItem from '../path/geometryForItem';
 import geometryForShape from '../path/geometryForShape';
 
-export default function(type, shape, key) {
+export default function(type, shape) {
 
   function attr(emit, item) {
     emit('transform', translateItem(item));
@@ -42,12 +42,8 @@ export default function(type, shape, key) {
       context._ty += y;
 
       if (context._fullRedraw || item._dirty || !item._geom || item._geom.deleted) {
-        if (key) {
-          item._geom = geometryForShape(context, item, shape, key);
-        } else {
-          shapeGeom = shape(context, item);
-          item._geom = geometryForItem(context, item, shapeGeom);
-        }
+        shapeGeom = shape(context, item);
+        item._geom = geometryForItem(context, item, shapeGeom);
       }
       drawGeometry(item._geom, context, item);
 

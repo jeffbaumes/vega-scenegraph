@@ -176,30 +176,84 @@ export default function(w, h) {
 // -------------------------------------------------------------------------
 
   vertCode = [
-    // 'precision highp float;',
     'attribute vec3 pos;',
     'attribute vec3 fillColor;',
     'attribute vec3 strokeColor;',
     'attribute float fillOpacity;',
     'attribute float strokeWidth;',
     'attribute float size;',
+    'attribute float shape;',
     'attribute float strokeOpacity;',
     'attribute vec2 unit;',
     'uniform mat4 matrix;',
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
     'varying float sizeVar;',
+    'varying float shapeVar;',
     'varying float strokeWidthVar;',
-    'varying vec3 unitVar;',
+    'varying vec2 unitVar;',
     'void main(void)',
     '{',
     '  strokeWidthVar = strokeWidth;',
     '  fillColorVar = vec4(fillColor, fillOpacity);',
     '  strokeColorVar = vec4(strokeColor, strokeOpacity);',
-    '  sizeVar = size;',
-    '  float m = size + strokeWidth;',
-    '  unitVar = vec3(unit, 1.0);',
-    '  gl_Position = matrix * vec4(pos.x + m * unit.x, pos.y + m * unit.y, -1.0, 1.0);',
+
+    // circle
+    '  if (shape == 0.0) {',
+    '    sizeVar = sqrt(size) / 2.0;',
+    '  }',
+
+    // cross
+    '  if (shape == 1.0) {',
+    '    sizeVar = sqrt(size) / 2.0;',
+    '  }',
+
+    // diamond
+    '  if (shape == 2.0) {',
+    '    sizeVar = sqrt(size) / 2.0;',
+    '  }',
+
+    // square
+    '  if (shape == 3.0) {',
+    '    sizeVar = sqrt(2.0) * sqrt(size) / 2.0;',
+    '  }',
+
+    // star
+    '  if (shape == 4.0) {',
+    '    sizeVar = sqrt(size) / 2.0;',
+    '  }',
+
+    // triangle-up
+    '  if (shape == 5.0) {',
+    '    sizeVar = (sqrt(6.0)/2.0) * sqrt(size) / 2.0;',
+    '  }',
+
+    // triangle-right
+    '  if (shape == 6.0) {',
+    '    sizeVar = (sqrt(6.0)/2.0) * sqrt(size) / 2.0;',
+    '  }',
+
+    // triangle-down
+    '  if (shape == 7.0) {',
+    '    sizeVar = (sqrt(6.0)/2.0) * sqrt(size) / 2.0;',
+    '  }',
+
+    // triangle-left
+    '  if (shape == 8.0) {',
+    '    sizeVar = (sqrt(6.0)/2.0) * sqrt(size) / 2.0;',
+    '  }',
+
+    // wye
+    '  if (shape == 9.0) {',
+    '    sizeVar = sqrt(size) / 2.0;',
+    '  }',
+
+    // '  sizeVar = size;',
+    '  shapeVar = shape;',
+    // '  float m = size + strokeWidth;',
+    '  float factor = (sizeVar + strokeWidth / 2.0 + 1.0) / sizeVar;',
+    '  unitVar = factor * unit;',
+    '  gl_Position = matrix * vec4(pos.xy + factor * sizeVar * unit, -1.0, 1.0);',
     '}'
   ].join('\n');
   vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -211,25 +265,200 @@ export default function(w, h) {
 
   fragCode = [
     'precision mediump float;',
+    'const float PI = 3.1415926535897932384626433832795;',
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
-    'varying vec3 unitVar;',
+    'varying vec2 unitVar;',
     'varying float sizeVar;',
+    'varying float shapeVar;',
     'varying float strokeWidthVar;',
+
+    'float distToLine(vec2 pt1, vec2 pt2, vec2 testPt)',
+    '{',
+    '  vec2 lineDir = pt2 - pt1;',
+    '  vec2 perpDir = vec2(lineDir.y, -lineDir.x);',
+    '  vec2 dirToPt1 = pt1 - testPt;',
+    '  return dot(normalize(perpDir), dirToPt1);',
+    '}',
+
+    'float distToAngle(vec2 apex, vec2 left, vec2 right, vec2 testPt)',
+    '{',
+    '  float dist = distToLine(apex, left, testPt);',
+    '  dist = min(dist, distToLine(right, apex, testPt));',
+    '  float cut = distToLine(left, right, testPt);',
+    '  if (cut < 0.0) return -1.0;',
+    '  return dist;',
+    '}',
+
+    'float distToHull(vec2 p1, vec2 p2, vec2 p3, vec2 p4, vec2 testPt)',
+    '{',
+    '  float dist = distToLine(p1, p2, testPt);',
+    '  dist = min(dist, distToLine(p2, p3, testPt));',
+    '  dist = min(dist, distToLine(p4, p1, testPt));',
+    '  float cut = distToLine(p3, p4, testPt);',
+    '  if (cut < 0.0) return -1.0;',
+    '  return dist;',
+    '}',
+
+    'vec2 rotate(vec2 pt, float a)',
+    '{',
+    '  return vec2(cos(a)*pt.x - sin(a)*pt.y, sin(a)*pt.x + cos(a)*pt.y);',
+    '}',
+
     'void main () {',
-    '  float endStep;',
-    '  float size = length(unitVar.xy);',
-    '  if (size > 1.0)',
-    '    discard;',
-    '  endStep = sizeVar / (sizeVar + strokeWidthVar);',
-    '  float antialiasDist = 3.0 / (2.0 * sizeVar);',
-    '  if (size < endStep) {',
-    '    float step = smoothstep(endStep - antialiasDist, endStep, size);',
-    '    gl_FragColor = mix(fillColorVar, strokeColorVar, step);',
-    '  } else {',
-    '    float step = smoothstep(1.0 - antialiasDist, 1.0, size);',
-    '    gl_FragColor = mix(strokeColorVar, vec4 (strokeColorVar.rgb, 0.0), step);',
+    '  float dist;',
+    '  float d1;',
+    '  float d2;',
+
+    // circle
+    '  if (shapeVar == 0.0) {',
+    '    dist = length(unitVar);',
     '  }',
+
+    // cross
+    '  if (shapeVar == 1.0) {',
+    '    float inset = 1.0 / 2.5;',
+    '    d1 = distToLine(vec2(-inset, -1.0), vec2(inset, -1.0), unitVar);',
+    '    d1 = min(d1, distToLine(vec2(inset, -1.0), vec2(inset, 1.0), unitVar));',
+    '    d1 = min(d1, distToLine(vec2(inset, 1.0), vec2(-inset, 1.0), unitVar));',
+    '    d1 = min(d1, distToLine(vec2(-inset, 1.0), vec2(-inset, -1.0), unitVar));',
+    '    d1 = 1.0 - d1;',
+    '    d2 = distToLine(vec2(1.0, -inset), vec2(1.0, inset), unitVar);',
+    '    d2 = min(d2, distToLine(vec2(1.0, inset), vec2(-1.0, inset), unitVar));',
+    '    d2 = min(d2, distToLine(vec2(-1.0, inset), vec2(-1.0, -inset), unitVar));',
+    '    d2 = min(d2, distToLine(vec2(-1.0, -inset), vec2(1.0, -inset), unitVar));',
+    '    d2 = 1.0 - d2;',
+    '    dist = min(d1, d2);',
+    '  }',
+
+    // diamond
+    '  if (shapeVar == 2.0) {',
+    '    dist = distToLine(vec2(0.0, -1.0), vec2(1.0, 0.0), unitVar);',
+    '    dist = min(dist, distToLine(vec2(1.0, 0.0), vec2(0.0, 1.0), unitVar));',
+    '    dist = min(dist, distToLine(vec2(0.0, 1.0), vec2(-1.0, 0.0), unitVar));',
+    '    dist = min(dist, distToLine(vec2(-1.0, 0.0), vec2(0.0, -1.0), unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // square
+    '  if (shapeVar == 3.0) {',
+    '    float side = sqrt(2.0)/2.0;',
+    '    dist = distToLine(vec2(-side, -side), vec2(side, -side), unitVar);',
+    '    dist = min(dist, distToLine(vec2(side, -side), vec2(side, side), unitVar));',
+    '    dist = min(dist, distToLine(vec2(side, side), vec2(-side, side), unitVar));',
+    '    dist = min(dist, distToLine(vec2(-side, side), vec2(-side, -side), unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // star
+    '  if (shapeVar == 4.0) {',
+    '    float h = 1.0;',
+    '    float x = h * tan(PI/10.0);',
+    '    vec2 p1 = vec2(0.0, -h);',
+    '    vec2 p2 = vec2(x, 0);',
+    '    vec2 p3 = vec2(-x, 0);',
+    '    float angle = 0.0;',
+    '    dist = 1.0 - distToAngle(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), unitVar);',
+    '    angle = angle + 2.0*PI/5.0;',
+    '    dist = min(dist, 1.0 - distToAngle(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), unitVar));',
+    '    angle = angle + 2.0*PI/5.0;',
+    '    dist = min(dist, 1.0 - distToAngle(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), unitVar));',
+    '    angle = angle + 2.0*PI/5.0;',
+    '    dist = min(dist, 1.0 - distToAngle(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), unitVar));',
+    '    angle = angle + 2.0*PI/5.0;',
+    '    dist = min(dist, 1.0 - distToAngle(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), unitVar));',
+    '  }',
+
+    // triangle-up
+    '  if (shapeVar == 5.0) {',
+    '    vec2 p1 = vec2(0.0, -sqrt(2.0)/2.0);',
+    '    vec2 p2 = vec2(sqrt(6.0)/3.0, sqrt(2.0)/2.0);',
+    '    vec2 p3 = vec2(-sqrt(6.0)/3.0, sqrt(2.0)/2.0);',
+    '    dist = distToLine(p1, p2, unitVar);',
+    '    dist = min(dist, distToLine(p2, p3, unitVar));',
+    '    dist = min(dist, distToLine(p3, p1, unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // triangle-right
+    '  if (shapeVar == 6.0) {',
+    '    vec2 p1 = vec2(sqrt(2.0)/2.0, 0.0);',
+    '    vec2 p2 = vec2(-sqrt(2.0)/2.0, sqrt(6.0)/3.0);',
+    '    vec2 p3 = vec2(-sqrt(2.0)/2.0, -sqrt(6.0)/3.0);',
+    '    dist = distToLine(p1, p2, unitVar);',
+    '    dist = min(dist, distToLine(p2, p3, unitVar));',
+    '    dist = min(dist, distToLine(p3, p1, unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // triangle-down
+    '  if (shapeVar == 7.0) {',
+    '    vec2 p1 = vec2(0.0, sqrt(2.0)/2.0);',
+    '    vec2 p2 = vec2(-sqrt(6.0)/3.0, -sqrt(2.0)/2.0);',
+    '    vec2 p3 = vec2(sqrt(6.0)/3.0, -sqrt(2.0)/2.0);',
+    '    dist = distToLine(p1, p2, unitVar);',
+    '    dist = min(dist, distToLine(p2, p3, unitVar));',
+    '    dist = min(dist, distToLine(p3, p1, unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // triangle-left
+    '  if (shapeVar == 8.0) {',
+    '    vec2 p1 = vec2(-sqrt(2.0)/2.0, 0.0);',
+    '    vec2 p2 = vec2(sqrt(2.0)/2.0, -sqrt(6.0)/3.0);',
+    '    vec2 p3 = vec2(sqrt(2.0)/2.0, sqrt(6.0)/3.0);',
+    '    dist = distToLine(p1, p2, unitVar);',
+    '    dist = min(dist, distToLine(p2, p3, unitVar));',
+    '    dist = min(dist, distToLine(p3, p1, unitVar));',
+    '    dist = 1.0 - dist;',
+    '  }',
+
+    // wye
+    '  if (shapeVar == 9.0) {',
+    '    float h = 12.0 / (12.0 + sqrt(12.0));',
+    '    float y = h / sqrt(12.0) + h;',
+    '    vec2 p1 = vec2(h / 2.0, y);',
+    '    vec2 p2 = vec2(-h / 2.0, y);',
+    '    vec2 p3 = vec2(-h / 2.0, 0.0);',
+    '    vec2 p4 = vec2(h / 2.0, 0.0);',
+    '    float angle = 0.0;',
+    '    dist = 1.0 - distToHull(p1, p2, p3, p4, unitVar);',
+    '    angle = angle + 2.0*PI/3.0;',
+    '    dist = min(dist, 1.0 - distToHull(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), rotate(p4, angle), unitVar));',
+    '    angle = angle + 2.0*PI/3.0;',
+    '    dist = min(dist, 1.0 - distToHull(rotate(p1, angle), rotate(p2, angle), rotate(p3, angle), rotate(p4, angle), unitVar));',
+    '  }',
+
+    '  float endStep = 1.0;',
+    '  float antialiasDist = 1.0 / sizeVar / 2.0;',
+    '  float widthDist = strokeWidthVar / sizeVar / 2.0;',
+    '  vec4 c1;',
+    '  vec4 c2;',
+    '  float step;',
+    '  if (dist < endStep) {',
+    '    step = smoothstep(endStep - widthDist - antialiasDist, endStep - widthDist + antialiasDist, dist);',
+    '    if (fillColorVar.a > 0.0) {',
+    '      c1 = fillColorVar;',
+    '    } else {',
+    '      c1 = vec4(strokeColorVar.rgb, 0.0);',
+    '    }',
+    '    if (strokeColorVar.a > 0.0) {',
+    '      c2 = strokeColorVar;',
+    '    } else {',
+    '      c2 = vec4(fillColorVar.rgb, 0.0);',
+    '    }',
+    '  } else {',
+    '    step = smoothstep(endStep + widthDist - antialiasDist, endStep + widthDist + antialiasDist, dist);',
+    '    if (strokeColorVar.a > 0.0) {',
+    '      c1 = strokeColorVar;',
+    '      c2 = vec4(strokeColorVar.rgb, 0.0);',
+    '    } else {',
+    '      c1 = vec4(fillColorVar.rgb, 0.0);',
+    '      c2 = vec4(fillColorVar.rgb, 0.0);',
+    '    }',
+    '  }',
+    '  gl_FragColor = mix(c1, c2, step);',
+    // '  gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);',
     '}'
   ].join('\n');
   fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -251,6 +480,7 @@ export default function(w, h) {
   gl._symbolFillOpacityLocation = gl.getAttribLocation(shaderProgram, 'fillOpacity');
   gl._symbolStrokeWidthLocation = gl.getAttribLocation(shaderProgram, 'strokeWidth');
   gl._symbolSizeLocation = gl.getAttribLocation(shaderProgram, 'size');
+  gl._symbolShapeLocation = gl.getAttribLocation(shaderProgram, 'shape');
   gl._symbolStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
   gl._symbolUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
   gl._symbolMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');

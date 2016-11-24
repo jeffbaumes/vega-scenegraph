@@ -36,7 +36,7 @@ var arcShape    = d3_arc().cornerRadius(cr).padAngle(pa),
     symbolShape = d3_symbol().type(type).size(size);
 
 export function arc(context, item) {
-  if (context.arc) {
+  if (!context || context.arc) {
     return arcShape.context(context)(item);
   }
   return geometryForPath(context, arcShape.context(null)(item), 0.1);
@@ -49,7 +49,7 @@ export function area(context, items) {
         : (item.orient === 'horizontal' ? areahShape : areavShape)
             .curve(curves(interp, item.orient, item.tension))
       )
-  if (context.arc) {
+  if (!context || context.arc) {
     return s.context(context)(items);
   }
   return geometryForPath(context, s.context(null)(items), 0.1);
@@ -57,7 +57,7 @@ export function area(context, items) {
 
 export function shape(context, item) {
   var s = item.mark.shape || item.shape;
-  if (context.arc) {
+  if (!context || context.arc) {
     return s.context(context)(item);
   }
   return geometryForPath(context, s.context(null)(item), 0.1);
@@ -67,7 +67,7 @@ export function line(context, items) {
   var item = items[0],
       interp = item.interpolate || 'linear',
       s = lineShape.curve(curves(interp, item.orient, item.tension));
-  if (context.arc) {
+  if (!context || context.arc) {
     return s.context(context)(items);
   }
   return geometryForPath(context, s.context(null)(items));
@@ -82,7 +82,7 @@ export function rectangleGL(context, item, x, y) {
 }
 
 export function symbol(context, item) {
-  if (context.arc) {
+  if (!context || context.arc) {
     return symbolShape.context(context)(item);
   }
   return geometryForPath(context, symbolShape.context(null)(item), 0.1);

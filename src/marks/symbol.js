@@ -31,24 +31,37 @@ function draw(context, item) {
 }
 
 function drawGL(gl, scene, bounds) {
-  var unit, pos, size,
+  var unit, pos, size, shape,
       strokeWidth, strokeOpacity, strokeColor,
       fillOpacity, fillColor,
-      unitBuffer, posBuffer, sizeBuffer,
+      unitBuffer, posBuffer, sizeBuffer, shapeBuffer,
       strokeWidthBuffer, strokeOpacityBuffer, strokeColorBuffer,
       fillOpacityBuffer, fillColorBuffer,
-      ivpf, ivpf3,
+      ivpf = 0, ivpf3 = 0,
       numPts = scene.items.length,
       xu = 0, yu = 0, w = 1, h = 1, j, unitItem,
-      sg = scene._symbolGeom;
+      sg = scene._symbolGeom, shapeIndex;
 
-  ivpf = ivpf3 = 0;
+  shapeIndex = {
+    circle: 0,
+    cross: 1,
+    diamond: 2,
+    square: 3,
+    star: 4,
+    triangle: 5,
+    'triangle-up': 5,
+    'triangle-right': 6,
+    'triangle-down': 7,
+    'triangle-left': 8,
+    wye: 9
+  };
 
   if (sg && sg.numPts === numPts) {
     unit = sg.unit;
     unitBuffer = sg.unitBuffer;
     pos = sg.pos;
     size = sg.size;
+    shape = sg.shape;
     strokeWidth = sg.strokeWidth;
     strokeOpacity = sg.strokeOpacity;
     strokeColor = sg.strokeColor;
@@ -61,6 +74,7 @@ function drawGL(gl, scene, bounds) {
     unit = new Float32Array(3 * numPts * 2);
     pos = new Float32Array(3 * numPts * 3);
     size = new Float32Array(3 * numPts);
+    shape = new Float32Array(3 * numPts);
     strokeWidth = new Float32Array(3 * numPts);
     strokeOpacity = new Float32Array(3 * numPts);
     strokeColor = new Float32Array(3 * numPts * 3);
@@ -80,6 +94,7 @@ function drawGL(gl, scene, bounds) {
   if (sg) {
     gl.deleteBuffer(sg.posBuffer);
     gl.deleteBuffer(sg.sizeBuffer);
+    gl.deleteBuffer(sg.shapeBuffer);
     gl.deleteBuffer(sg.strokeWidthBuffer);
     gl.deleteBuffer(sg.strokeOpacityBuffer);
     gl.deleteBuffer(sg.strokeColorBuffer);
@@ -93,10 +108,11 @@ function drawGL(gl, scene, bounds) {
         fc = color(gl, item, item.fill),
         sc = color(gl, item, item.stroke),
         op = item.opacity == null ? 1 : item.opacity,
-        fo = op * (item.fill == null ? 0 : 1) * (item.fillOpacity == null ? 1 : item.fillOpacity),
-        so = op * (item.stroke == null ? 0 : 1) * (item.strokeOpacity == null ? 1 : item.strokeOpacity),
-        sw = item.strokeWidth == null ? 1 : item.strokeWidth,
-        sz = Math.sqrt((item.size == null ? 64 : item.size) / Math.PI);
+        fo = op * ((item.fill == null || item.fill == 'transparent') ? 0 : 1) * (item.fillOpacity == null ? 1 : item.fillOpacity),
+        so = op * ((item.stroke == null || item.stroke == 'transparent') ? 0 : 1) * (item.strokeOpacity == null ? 1 : item.strokeOpacity),
+        sw = ((item.stroke == null || item.stroke == 'transparent') ? 0 : 1) * (item.strokeWidth == null ? 1 : item.strokeWidth),
+        sz = (item.size == null ? 64 : item.size),
+        sh = shapeIndex[item.shape] == undefined ? 0 : shapeIndex[item.shape];
 
     for (j = 0; j < 3; j += 1, ivpf += 1, ivpf3 += 3) {
       pos[ivpf3] = x;
@@ -104,6 +120,7 @@ function drawGL(gl, scene, bounds) {
       pos[ivpf3 + 2] = 0;
       size[ivpf] = sz;
       strokeWidth[ivpf] = sw;
+      shape[ivpf] = sh;
       strokeOpacity[ivpf] = so;
       strokeColor[ivpf3] = sc[0];
       strokeColor[ivpf3 + 1] = sc[1];
@@ -140,6 +157,12 @@ function drawGL(gl, scene, bounds) {
   gl.bufferData(gl.ARRAY_BUFFER, size, gl.STATIC_DRAW);
   gl.vertexAttribPointer(gl._symbolSizeLocation, 1, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(gl._symbolSizeLocation);
+
+  shapeBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, shapeBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, shape, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._symbolShapeLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._symbolShapeLocation);
 
   strokeWidthBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, strokeWidthBuffer);
@@ -180,6 +203,7 @@ function drawGL(gl, scene, bounds) {
     unit: unit,
     pos: pos,
     size: size,
+    shape: shape,
     strokeWidth: strokeWidth,
     strokeOpacity: strokeOpacity,
     strokeColor: strokeColor,
@@ -188,6 +212,7 @@ function drawGL(gl, scene, bounds) {
     unitBuffer: unitBuffer,
     posBuffer: posBuffer,
     sizeBuffer: sizeBuffer,
+    shapeBuffer: shapeBuffer,
     strokeWidthBuffer: strokeWidthBuffer,
     strokeOpacityBuffer: strokeOpacityBuffer,
     strokeColorBuffer: strokeColorBuffer,
