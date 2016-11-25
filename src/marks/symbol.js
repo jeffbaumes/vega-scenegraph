@@ -42,6 +42,10 @@ function drawGL(gl, scene, bounds) {
       xu = 0, yu = 0, w = 1, h = 1, j, unitItem,
       sg = scene._symbolGeom, shapeIndex;
 
+  if (numPts === 0) {
+    return;
+  }
+
   shapeIndex = {
     circle: 0,
     cross: 1,
