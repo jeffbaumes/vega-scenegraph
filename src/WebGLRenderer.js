@@ -119,7 +119,7 @@ prototype._updateUniforms = function() {
     0, 0, 0, 1
   ];
 
-  this.matrix = multiply(this.matrix, perspective(Math.PI/2, width/height, 0.1, 3000));
+  this.matrix = multiply(this.matrix, perspective(Math.PI/2, width/height, 0.01, 3000));
   this.matrix = multiply(this.matrix, translateGL(this._translateX, this._translateY, (this._translateZ - 1)*height/width));
   this.matrix = multiply(this.matrix, rotateZ(this._angleZ));
   this.matrix = multiply(this.matrix, rotateY(this._angleY));

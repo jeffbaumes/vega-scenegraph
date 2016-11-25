@@ -35,8 +35,20 @@ function drawGL(gl, scene, bounds) {
       fillOpacityBuffer, fillColorBuffer, cornerRadiusBuffer,
       ivpf = 0, ivpf2 = 0, ivpf3 = 0,
       numPts = scene.items.length,
-      unitItem, j,
+      unitItem, j, anyGradients = false, ci,
       sg = scene._rectGeom;
+
+  for (j = 0; j < scene.items.length; ++j) {
+    ci = scene.items[j];
+    if ((ci.stroke && ci.stroke.id) || (ci.fill && ci.fill.id)) {
+      anyGradients = true;
+      break;
+    }
+  }
+  if (anyGradients) {
+    drawAll(draw)(gl._textContext, scene, bounds);
+    return;
+  }
 
   if (sg && sg.numPts === numPts) {
     unit = sg.unit;
