@@ -29,10 +29,10 @@ function draw(context, item) {
 function drawGL(gl, scene, bounds) {
   var unit, pos, size,
       strokeWidth, strokeOpacity, strokeColor,
-      fillOpacity, fillColor,
+      fillOpacity, fillColor, cornerRadius,
       unitBuffer, posBuffer, sizeBuffer,
       strokeWidthBuffer, strokeOpacityBuffer, strokeColorBuffer,
-      fillOpacityBuffer, fillColorBuffer,
+      fillOpacityBuffer, fillColorBuffer, cornerRadiusBuffer,
       ivpf = 0, ivpf2 = 0, ivpf3 = 0,
       numPts = scene.items.length,
       unitItem, j,
@@ -48,6 +48,7 @@ function drawGL(gl, scene, bounds) {
     strokeColor = sg.strokeColor;
     fillOpacity = sg.fillOpacity;
     fillColor = sg.fillColor;
+    cornerRadius = sg.cornerRadius;
   } else {
     if (sg) {
       gl.deleteBuffer(sg.unitBuffer);
@@ -60,6 +61,7 @@ function drawGL(gl, scene, bounds) {
     strokeColor = new Float32Array(6 * numPts * 3);
     fillOpacity = new Float32Array(6 * numPts);
     fillColor = new Float32Array(6 * numPts * 3);
+    cornerRadius = new Float32Array(6 * numPts);
 
     unitItem = [
       0, 1,
@@ -82,6 +84,7 @@ function drawGL(gl, scene, bounds) {
     gl.deleteBuffer(sg.strokeColorBuffer);
     gl.deleteBuffer(sg.fillOpacityBuffer);
     gl.deleteBuffer(sg.fillColorBuffer);
+    gl.deleteBuffer(sg.cornerRadiusBuffer);
   }
 
   visit(scene, function(item) {
@@ -94,7 +97,8 @@ function drawGL(gl, scene, bounds) {
         so = op * ((item.stroke == null || item.stroke == 'transparent') ? 0 : 1) * (item.strokeOpacity == null ? 1 : item.strokeOpacity),
         sw = ((item.stroke == null || item.stroke == 'transparent') ? 0 : 1) * (item.strokeWidth == null ? 1 : item.strokeWidth),
         sx = (item.width == null ? 0 : item.width),
-        sy = (item.height == null ? 0 : item.height);
+        sy = (item.height == null ? 0 : item.height),
+        cr = (item.cornerRadius == null ? 0 : item.cornerRadius);
 
     for (j = 0; j < 6; j += 1, ivpf += 1, ivpf2 += 2, ivpf3 += 3) {
       pos[ivpf3] = x;
@@ -111,6 +115,7 @@ function drawGL(gl, scene, bounds) {
       fillColor[ivpf3] = fc[0];
       fillColor[ivpf3 + 1] = fc[1];
       fillColor[ivpf3 + 2] = fc[2];
+      cornerRadius[ivpf] = cr;
     }
   });
 
@@ -170,6 +175,12 @@ function drawGL(gl, scene, bounds) {
   gl.vertexAttribPointer(gl._rectFillColorLocation, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(gl._rectFillColorLocation);
 
+  cornerRadiusBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cornerRadiusBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cornerRadius, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(gl._rectCornerRadiusLocation, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(gl._rectCornerRadiusLocation);
+
   gl.uniformMatrix4fv(gl._rectMatrixLocation, false, gl._matrix);
 
   gl.drawArrays(gl.TRIANGLES, 0, numPts * 6);
@@ -184,6 +195,7 @@ function drawGL(gl, scene, bounds) {
     strokeColor: strokeColor,
     fillOpacity: fillOpacity,
     fillColor: fillColor,
+    cornerRadius: cornerRadius,
     unitBuffer: unitBuffer,
     posBuffer: posBuffer,
     sizeBuffer: sizeBuffer,
@@ -191,7 +203,8 @@ function drawGL(gl, scene, bounds) {
     strokeOpacityBuffer: strokeOpacityBuffer,
     strokeColorBuffer: strokeColorBuffer,
     fillOpacityBuffer: fillOpacityBuffer,
-    fillColorBuffer: fillColorBuffer
+    fillColorBuffer: fillColorBuffer,
+    cornerRadiusBuffer: cornerRadiusBuffer
   };
 }
 

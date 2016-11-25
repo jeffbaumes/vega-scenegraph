@@ -458,7 +458,6 @@ export default function(w, h) {
     '    }',
     '  }',
     '  gl_FragColor = mix(c1, c2, step);',
-    // '  gl_FragColor = vec4(vec3(dist), 1.0);',
     '}'
   ].join('\n');
   fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -494,12 +493,14 @@ export default function(w, h) {
     'attribute float fillOpacity;',
     'attribute float strokeWidth;',
     'attribute float strokeOpacity;',
+    'attribute float cornerRadius;',
     'attribute vec2 size;',
     'attribute vec2 unit;',
     'uniform mat4 matrix;',
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
     'varying float strokeWidthVar;',
+    'varying float cornerRadiusVar;',
     'varying float factorVar;',
     'varying vec2 sizeVar;',
     'varying vec2 unitVar;',
@@ -508,6 +509,7 @@ export default function(w, h) {
     '  strokeWidthVar = strokeWidth;',
     '  fillColorVar = vec4(fillColor, fillOpacity);',
     '  strokeColorVar = vec4(strokeColor, strokeOpacity);',
+    '  cornerRadiusVar = cornerRadius;',
     '  sizeVar = size;',
     '  unitVar = unit;',
     '  factorVar = max(size.x, size.y) + strokeWidth + 1.0;',
@@ -527,6 +529,7 @@ export default function(w, h) {
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
     'varying float strokeWidthVar;',
+    'varying float cornerRadiusVar;',
     'varying float factorVar;',
     'varying vec2 unitVar;',
     'varying vec2 sizeVar;',
@@ -537,6 +540,13 @@ export default function(w, h) {
     '  vec2 perpDir = vec2(lineDir.y, -lineDir.x);',
     '  vec2 dirToPt1 = pt1 - testPt;',
     '  return dot(normalize(perpDir), dirToPt1);',
+    '}',
+
+    'float cornerDist(vec2 pt, float radius, float xdir, float ydir, vec2 testPt)',
+    '{',
+    '  if (xdir * (pt.x - testPt.x) > 0.0) return 1.0;',
+    '  if (ydir * (pt.y - testPt.y) > 0.0) return 1.0;',
+    '  return radius - length(pt - testPt);',
     '}',
 
     'void main () {',
@@ -551,6 +561,21 @@ export default function(w, h) {
     '  dist = min(dist, distToLine(p2, p3, unitVar));',
     '  dist = min(dist, distToLine(p3, p4, unitVar));',
     '  dist = min(dist, distToLine(p4, p1, unitVar));',
+
+    '  if (cornerRadiusVar > 0.0) {',
+    '    delta = (0.5 + 0.5*strokeWidthVar + cornerRadiusVar)/factorVar;',
+    '    xmax = (0.5 + 0.5*strokeWidthVar + sizeVar.x - cornerRadiusVar)/factorVar;',
+    '    ymax = (0.5 + 0.5*strokeWidthVar + sizeVar.y - cornerRadiusVar)/factorVar;',
+    '    p1 = vec2(delta, delta);',
+    '    p2 = vec2(xmax, delta);',
+    '    p3 = vec2(xmax, ymax);',
+    '    p4 = vec2(delta, ymax);',
+    '    dist = min(dist, cornerDist(p1, cornerRadiusVar/factorVar, -1.0, -1.0, unitVar));',
+    '    dist = min(dist, cornerDist(p2, cornerRadiusVar/factorVar, 1.0, -1.0, unitVar));',
+    '    dist = min(dist, cornerDist(p3, cornerRadiusVar/factorVar, 1.0, 1.0, unitVar));',
+    '    dist = min(dist, cornerDist(p4, cornerRadiusVar/factorVar, -1.0, 1.0, unitVar));',
+    '  }',
+
     '  dist = 1.0 - dist;',
 
     '  float endStep = 1.0;',
@@ -582,7 +607,6 @@ export default function(w, h) {
     '    }',
     '  }',
     '  gl_FragColor = mix(c1, c2, step);',
-    // '  gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);',
     '}'
   ].join('\n');
   fragShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -605,6 +629,7 @@ export default function(w, h) {
   gl._rectStrokeWidthLocation = gl.getAttribLocation(shaderProgram, 'strokeWidth');
   gl._rectSizeLocation = gl.getAttribLocation(shaderProgram, 'size');
   gl._rectStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
+  gl._rectCornerRadiusLocation = gl.getAttribLocation(shaderProgram, 'cornerRadius');
   gl._rectUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
   gl._rectMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
 
