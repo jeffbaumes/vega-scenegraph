@@ -149,7 +149,7 @@ function drawGL(context, scene, bounds) {
         gy = group.y || 0,
         w = group.width || 0,
         h = group.height || 0,
-        offset, opacity;
+        offset, opacity, oldClip;
 
     // setup graphics context
     context._tx += gx;
@@ -167,7 +167,13 @@ function drawGL(context, scene, bounds) {
 
     // set clip and bounds
     if (group.clip) {
-      // TODO: do something here in webgl?
+      oldClip = context._clip;
+      context._clip = [
+        context._origin[0] + context._tx,
+        context._origin[1] + context._ty,
+        context._origin[0] + context._tx + w,
+        context._origin[1] + context._ty + h
+      ];
     }
     if (bounds) bounds.translate(-gx, -gy);
 
@@ -178,6 +184,9 @@ function drawGL(context, scene, bounds) {
 
     // restore graphics context
     if (bounds) bounds.translate(gx, gy);
+    if (group.clip) {
+      context._clip = oldClip;
+    }
 
     context._tx -= gx;
     context._ty -= gy;

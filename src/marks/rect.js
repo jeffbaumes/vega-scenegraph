@@ -182,6 +182,7 @@ function drawGL(gl, scene, bounds) {
   gl.enableVertexAttribArray(gl._rectCornerRadiusLocation);
 
   gl.uniformMatrix4fv(gl._rectMatrixLocation, false, gl._matrix);
+  gl.uniform4fv(gl._rectClipLocation, gl._clip);
 
   gl.drawArrays(gl.TRIANGLES, 0, numPts * 6);
 

@@ -19,6 +19,7 @@ export default function(geom, gl, item) {
   gl._lastColorBuffer = geom.colorBuffer;
 
   gl.uniform2fv(gl._offsetLocation, [tx, ty]);
+  gl.uniform4fv(gl._clipLocation, gl._clip);
 
   gl.drawArrays(gl.TRIANGLES, 0, geom.numTriangles * 3);
 }

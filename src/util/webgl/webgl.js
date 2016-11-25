@@ -35,9 +35,11 @@ export default function(w, h) {
     'uniform float zFactor;' +
     'uniform vec2 offset;' +
     'varying vec4 vColor;' +
+    'varying vec4 vPosition;' +
     'void main(void) {' +
-       ' gl_Position = matrix * vec4(coordinates.x + offset.x, coordinates.y + offset.y, coordinates.z*zFactor - 1.0, 1.0);' +
-       ' vColor = color;' +
+    '  vPosition = vec4(coordinates.x + offset.x, coordinates.y + offset.y, coordinates.z*zFactor - 1.0, 1.0);' +
+    '  gl_Position = matrix * vPosition;' +
+    '  vColor = color;' +
     '}';
   var vertShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertShader, vertCode);
@@ -49,8 +51,13 @@ export default function(w, h) {
   var fragCode =
     'precision mediump float;' +
     'varying vec4 vColor;' +
+    'varying vec4 vPosition;' +
+    'uniform vec4 clip;' +
     'void main(void) {' +
-      ' gl_FragColor = vColor;' +
+    '  if (vPosition.x < clip[0] || vPosition.x > clip[2] || vPosition.y < clip[1] || vPosition.y > clip[3]) {' +
+    '    discard;' +
+    '  }' +
+    '  gl_FragColor = vColor;' +
     '}';
   var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(fragShader, fragCode);
@@ -70,6 +77,7 @@ export default function(w, h) {
   gl._matrixLocation = gl.getUniformLocation(gl._shaderProgram, 'matrix');
   gl._zFactorLocation = gl.getUniformLocation(gl._shaderProgram, 'zFactor');
   gl._offsetLocation = gl.getUniformLocation(gl._shaderProgram, 'offset');
+  gl._clipLocation = gl.getUniformLocation(gl._shaderProgram, 'clip');
 
 // -------------------------------------------------------------------------
 // BEGIN: Adapted from https://github.com/greggman/webgl-fundamentals
@@ -186,6 +194,7 @@ export default function(w, h) {
     'attribute float strokeOpacity;',
     'attribute vec2 unit;',
     'uniform mat4 matrix;',
+    'varying vec4 positionVar;',
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
     'varying float sizeVar;',
@@ -253,7 +262,8 @@ export default function(w, h) {
     // '  float m = size + strokeWidth;',
     '  float factor = (sizeVar + strokeWidth / 2.0 + 1.0) / sizeVar;',
     '  unitVar = factor * unit;',
-    '  gl_Position = matrix * vec4(pos.xy + factor * sizeVar * unit, -1.0, 1.0);',
+    '  positionVar = vec4(pos.xy + factor * sizeVar * unit, -1.0, 1.0);',
+    '  gl_Position = matrix * positionVar;',
     '}'
   ].join('\n');
   vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -266,12 +276,14 @@ export default function(w, h) {
   fragCode = [
     'precision mediump float;',
     'const float PI = 3.1415926535897932384626433832795;',
+    'varying vec4 positionVar;',
     'varying vec4 fillColorVar;',
     'varying vec4 strokeColorVar;',
     'varying vec2 unitVar;',
     'varying float sizeVar;',
     'varying float shapeVar;',
     'varying float strokeWidthVar;',
+    'uniform vec4 clip;',
 
     'float distToLine(vec2 pt1, vec2 pt2, vec2 testPt)',
     '{',
@@ -306,6 +318,10 @@ export default function(w, h) {
     '}',
 
     'void main () {',
+    '  if (positionVar.x < clip[0] || positionVar.x > clip[2] || positionVar.y < clip[1] || positionVar.y > clip[3]) {',
+    '    discard;',
+    '  }',
+
     '  float dist;',
     '  float d1;',
     '  float d2;',
@@ -483,6 +499,7 @@ export default function(w, h) {
   gl._symbolStrokeOpacityLocation = gl.getAttribLocation(shaderProgram, 'strokeOpacity');
   gl._symbolUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
   gl._symbolMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
+  gl._symbolClipLocation = gl.getUniformLocation(shaderProgram, 'clip');
 
   // rect shader
 
@@ -504,6 +521,7 @@ export default function(w, h) {
     'varying float factorVar;',
     'varying vec2 sizeVar;',
     'varying vec2 unitVar;',
+    'varying vec4 positionVar;',
     'void main(void)',
     '{',
     '  strokeWidthVar = strokeWidth;',
@@ -513,7 +531,8 @@ export default function(w, h) {
     '  sizeVar = size;',
     '  unitVar = unit;',
     '  factorVar = max(size.x, size.y) + strokeWidth + 1.0;',
-    '  gl_Position = matrix * vec4(pos.xy + factorVar*unitVar - 0.5*strokeWidth - 0.5, -1.0, 1.0);',
+    '  positionVar = vec4(pos.xy + factorVar*unitVar - 0.5*strokeWidth - 0.5, -1.0, 1.0);',
+    '  gl_Position = matrix * positionVar;',
     '}'
   ].join('\n');
   vertShader = gl.createShader(gl.VERTEX_SHADER);
@@ -533,6 +552,8 @@ export default function(w, h) {
     'varying float factorVar;',
     'varying vec2 unitVar;',
     'varying vec2 sizeVar;',
+    'varying vec4 positionVar;',
+    'uniform vec4 clip;',
 
     'float distToLine(vec2 pt1, vec2 pt2, vec2 testPt)',
     '{',
@@ -550,6 +571,9 @@ export default function(w, h) {
     '}',
 
     'void main () {',
+    '  if (positionVar.x < clip[0] || positionVar.x > clip[2] || positionVar.y < clip[1] || positionVar.y > clip[3]) {',
+    '    discard;',
+    '  }',
     '  float delta = (0.5 + 0.5*strokeWidthVar)/factorVar;',
     '  float xmax = (0.5 + 0.5*strokeWidthVar + sizeVar.x)/factorVar;',
     '  float ymax = (0.5 + 0.5*strokeWidthVar + sizeVar.y)/factorVar;',
@@ -632,6 +656,7 @@ export default function(w, h) {
   gl._rectCornerRadiusLocation = gl.getAttribLocation(shaderProgram, 'cornerRadius');
   gl._rectUnitLocation = gl.getAttribLocation(shaderProgram, 'unit');
   gl._rectMatrixLocation = gl.getUniformLocation(shaderProgram, 'matrix');
+  gl._rectClipLocation = gl.getUniformLocation(shaderProgram, 'clip');
 
   return canvas;
 }

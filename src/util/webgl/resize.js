@@ -32,6 +32,7 @@ export default function(canvas, width, height, origin) {
 
   gl._origin = origin;
   gl._ratio = ratio;
+  gl._clip = [0, 0, canvas.width / gl._ratio, canvas.height / gl._ratio];
 
   return canvas;
 }

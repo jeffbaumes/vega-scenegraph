@@ -195,6 +195,7 @@ function drawGL(gl, scene, bounds) {
   gl.enableVertexAttribArray(gl._symbolFillColorLocation);
 
   gl.uniformMatrix4fv(gl._symbolMatrixLocation, false, gl._matrix);
+  gl.uniform4fv(gl._symbolClipLocation, gl._clip);
 
   gl.drawArrays(gl.TRIANGLES, 0, numPts * 3);
 
