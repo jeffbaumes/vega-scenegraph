@@ -229,6 +229,11 @@ prototype.draw = function(ctx, scene, bounds) {
   }
 };
 
+prototype.toDataURL = function(scene) {
+  this.render(scene, null);
+  return this.canvas().toDataURL("image/png", 1);
+};
+
 prototype.clear = function(x, y, w, h) {
   var gl = this.context(), c;
   if (this._bgcolor != null) {
